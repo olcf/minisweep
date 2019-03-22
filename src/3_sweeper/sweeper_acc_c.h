@@ -451,11 +451,14 @@ void Sweeper_sweep(
 
   /*--- Set OpenACC device based on MPI rank ---*/
 #ifdef USE_MPI
-  int num_devices = acc_get_num_devices(acc_device_default);
+  //int num_devices = acc_get_num_devices(acc_device_default);
+  int num_devices = acc_get_num_devices(acc_device_nvidia);
   int mpi_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   int device_num = mpi_rank % num_devices;
-  acc_set_device_num( device_num, acc_device_default );
+  printf("%d: num_devices = %d, device_num = %d\n",mpi_rank,num_devices,device_num);
+  //acc_set_device_num( device_num, acc_device_default );
+  acc_set_device_num( device_num, acc_device_nvidia );
 #endif
 
   /*---Declarations---*/

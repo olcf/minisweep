@@ -1,5 +1,5 @@
 
-CFLAGS = -O3 -acc -Minfo=accel -ta=tesla,cc60 
+CFLAGS = -O3 -acc -Minfo=accel -ta=tesla,cc70
 
 #all: atomics locks locks_llvm locks_xlc atomics_xlc
 TARGETS = gauss_seidel gauss_seidel_acc
@@ -39,7 +39,7 @@ CFLAGS += -DBLOCK_GRID_H=$(BLOCK_GRID_H)
 CFLAGS += -DCOUNTEXTENT=$(COUNTEXTENT)
 
 %:%.c
-	pgcc $(CFLAGS) $< -o $@ -lm
+	$(CC) $(CFLAGS) $< -o $@ -lm
 
 clean:
 	rm -f $(TARGETS) $(OBJECTS)
