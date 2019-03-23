@@ -66,6 +66,7 @@ typedef struct
   Stream_t stream_recv_block_;
   Stream_t stream_kernel_faces_;
 #endif
+  int pad;
 } Env;
 
 /*===========================================================================*/

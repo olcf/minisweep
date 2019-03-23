@@ -26,4 +26,8 @@
 #include "sweeper_acc_c.h"
 #endif
 
+#ifdef SWEEPER_OPENMP4
+#include "sweeper_openmp4_c.h"
+#endif
+
 /*---------------------------------------------------------------------------*/

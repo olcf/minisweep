@@ -22,7 +22,11 @@
 #ifdef USE_ACC
 #define SWEEPER_ACC
 #else
+#ifdef USE_OPENMP4
+#define SWEEPER_OPENMP4
+#else
 #define SWEEPER_KBA
+#endif
 #endif
 
 #ifdef SWEEPER_SIMPLE
@@ -39,6 +43,10 @@
 
 #ifdef SWEEPER_ACC
 #include "sweeper_acc.h"
+#endif
+
+#ifdef SWEEPER_OPENMP4
+#include "sweeper_openmp4.h"
 #endif
 
 #endif /*---_sweep_h_---*/
