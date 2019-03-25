@@ -43,7 +43,7 @@ fi
 
 # SOURCE AND INSTALL
 if [ "$SOURCE" = "" ] ; then
-  SOURCE=../minisweep
+  SOURCE=../
 fi
 if [ "$INSTALL" = "" ] ; then
   INSTALL=../install
