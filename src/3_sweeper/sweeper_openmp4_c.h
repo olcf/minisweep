@@ -81,7 +81,7 @@ void Sweeper_destroy( Sweeper* sweeper,
 /*---Quantities_init_face inline routine---*/
 
 #ifdef USE_OPENMP4
-//#pragma omp declare target
+#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -110,14 +110,14 @@ P Quantities_init_face(int ia, int ie, int iu, int scalefactor_space, int octant
 
 }
 #ifdef USE_OPENMP4
-//#pragma omp end declare target
+#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
 /*---Quantities_scalefactor_space_ inline routine---*/
 
 #ifdef USE_OPENMP4
-//#pragma omp declare target
+#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -140,11 +140,11 @@ int Quantities_scalefactor_space_inline(int ix, int iy, int iz)
   return scalefactor_space;
 }
 #ifdef USE_OPENMP4
-//#pragma omp end declare target
+#pragma omp end declare target
 #endif
 
 #ifdef USE_OPENMP4
-//#pragma omp declare target
+#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -278,13 +278,13 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
     } /*---for---*/
 }
 #ifdef USE_OPENMP4
-//#pragma omp end declare target
+#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
 /*---In-gricell computations---*/
 #ifdef USE_OPENMP4
-//#pragma omp declare target
+#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine vector
@@ -342,19 +342,20 @@ void Sweeper_in_gridcell(  Dimensions dims,
   }
 
   /*--- Bounds check ---*/
-  if ((iz >= 0 && iz < dim_z) )// &&
+  if ((iz >= 0 && iz < dim_z) ) /* && */
     /* ((dir_z==DIR_UP && iz <= wavefront) || */
     /*  (dir_z==DIR_DN && (dim_z-1-iz) <= wavefront))) */
     {
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-#pragma omp parallel for simd
+#pragma omp parallel for 
+//#pragma omp simd
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
 #endif
-// FIX: come back to this
+/* FIX: come back to this */
       for( ie=0; ie<dim_ne; ++ie )
       {
 
@@ -372,7 +373,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
       for( iu=0; iu<NU; ++iu )
       for( ia=0; ia<dim_na; ++ia )
       { 
-	// reset reduction
+	/* reset reduction */
 	P result = (P)0;
 #ifdef USE_OPENMP4
 #endif
@@ -414,7 +415,8 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-#pragma omp parallel for simd
+#pragma omp parallel for
+//#pragma omp simd
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(2)
@@ -437,8 +439,9 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-//FIX this
-//#pragma omp parallel for simd collapse(3)
+/*FIX this */
+#pragma omp parallel for collapse(3)
+//#pragma omp simd
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
@@ -474,7 +477,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
         }
 
 	/*--- ref_state inline ---*/
-// FIX: use omp critical ??
+/* FIX: use omp critical ??*/
 #ifdef USE_OPENMP4
 #pragma omp atomic update
 #endif
@@ -488,9 +491,6 @@ void Sweeper_in_gridcell(  Dimensions dims,
              ie + dims.ne      * (
              iz + dims.ncell_z * ( /*---NOTE: This axis MUST be slowest-varying---*/
              0 ))))))] += result;
-#ifdef USE_OPENMP4
-//#pragma omp end atomic update
-#endif
       }
 
       } /*---ie---*/
@@ -498,7 +498,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
 	} /*--- iz ---*/
 }
 #ifdef USE_OPENMP4
-//#pragma omp end declare target
+#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
@@ -517,11 +517,11 @@ void Sweeper_sweep(
 
   /*--- Set OpenACC device based on MPI rank ---*/
 #ifdef USE_MPI
-  int num_devices = 1; // acc_get_num_devices(acc_device_default);
+  int num_devices = 1; /* acc_get_num_devices(acc_device_default);*/
   int mpi_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   int device_num = mpi_rank % num_devices;
-  //acc_set_device_num( device_num, acc_device_default );
+  /*acc_set_device_num( device_num, acc_device_default );*/
 #endif
 
   /*---Declarations---*/
@@ -621,7 +621,7 @@ void Sweeper_sweep(
 #endif
 {
 
-// FIX: maybe collapse(6)
+/* FIX: maybe collapse(6) */
 #ifdef USE_OPENMP4
 #pragma omp target teams distribute collapse(3)
 #endif
@@ -632,7 +632,8 @@ void Sweeper_sweep(
       for( iy=0; iy<dim_y; ++iy )
       for( ix=0; ix<dim_x; ++ix )
 #ifdef USE_OPENMP4
-#pragma omp parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
+//#pragma omp simd
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector collapse(3)
@@ -679,7 +680,8 @@ void Sweeper_sweep(
       for( iz=0; iz<dim_z; ++iz )
       for( ix=0; ix<dim_x; ++ix )
 #ifdef USE_OPENMP4
-#pragma omp parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
+//#pragma omp simd
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector collapse(3)
@@ -726,7 +728,8 @@ void Sweeper_sweep(
       for( iz=0; iz<dim_z; ++iz )
       for( iy=0; iy<dim_y; ++iy )
 #ifdef USE_OPENMP4
-#pragma omp parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
+//#pragma omp simd
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector collapse(3)
@@ -775,7 +778,7 @@ void Sweeper_sweep(
 #endif
  {
 
-// FIX: do we need an omp parallel for nowait here with 8 CPU threads ??
+/* FIX: do we need an omp parallel for nowait here with 8 CPU threads ??*/
 /*---Loop over octants---*/
 for( octant=0; octant<NOCTANT; ++octant )
   {
@@ -801,7 +804,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 /*--- Create an asynchronous queue for each octant ---*/
 #ifdef USE_OPENMP4
 
-// FIX: possibly CPU threads here? or CPU tasks? ? parallel nowait ?
+/* FIX: possibly CPU threads here? or CPU tasks? ? parallel nowait ?*/
 
 #endif
 #ifdef USE_ACC
