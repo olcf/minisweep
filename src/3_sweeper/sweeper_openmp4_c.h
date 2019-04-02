@@ -81,7 +81,7 @@ void Sweeper_destroy( Sweeper* sweeper,
 /*---Quantities_init_face inline routine---*/
 
 #ifdef USE_OPENMP4
-#pragma omp declare target
+//#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -110,14 +110,14 @@ P Quantities_init_face(int ia, int ie, int iu, int scalefactor_space, int octant
 
 }
 #ifdef USE_OPENMP4
-#pragma omp end declare target
+//#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
 /*---Quantities_scalefactor_space_ inline routine---*/
 
 #ifdef USE_OPENMP4
-#pragma omp declare target
+//#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -140,11 +140,11 @@ int Quantities_scalefactor_space_inline(int ix, int iy, int iz)
   return scalefactor_space;
 }
 #ifdef USE_OPENMP4
-#pragma omp end declare target
+//#pragma omp end declare target
 #endif
 
 #ifdef USE_OPENMP4
-#pragma omp declare target
+//#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -183,8 +183,21 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
   const P scalefactor_space_z_r = ((P)1) /
     Quantities_scalefactor_space_inline( ix, iy, iz - dir_z );
 
+  int facexy_size = dims.ncell_x * dims.ncell_y * 
+    dims.ne * dims.na * NU * NOCTANT;
+  int facexz_size = dims.ncell_x * dims.ncell_z * 
+    dims.ne * dims.na * NU * NOCTANT;
+  int faceyz_size = dims.ncell_y * dims.ncell_z * 
+    dims.ne * dims.na * NU * NOCTANT;
+  int v_size = dims.nm * dims.na * NOCTANT;
+  int vi_h_size = dims.ncell_x * dims.ncell_y * dims.ncell_z * 
+    dims.ne * dims.nm * NU;
+  int vo_h_size = dims.ncell_x * dims.ncell_y * dims.ncell_z * 
+    dims.ne * dims.nm * NU;
+  int vs_local_size = dims.na * NU * dims.ne * NOCTANT * dims.ncell_x * dims.ncell_y;
+
 #ifdef USE_OPENMP4
-//#pragma omp target data map(to:dims,octant,scalefactor_space_r,facexy)
+//#pragma omp target data map(to:dims,octant,scalefactor_space_r,facexy[0:facexy_size],vs_local[0:vs_local_size])
 //#pragma omp target parallel for
 #endif
 
@@ -281,13 +294,13 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
     } /*---for---*/
 }
 #ifdef USE_OPENMP4
-#pragma omp end declare target
+//#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
 /*---In-gricell computations---*/
 #ifdef USE_OPENMP4
-#pragma omp declare target
+//#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine vector
@@ -324,6 +337,18 @@ void Sweeper_in_gridcell(  Dimensions dims,
   int dim_ne = dims.ne;
   int dim_na = dims.na;
   int dim_nm = dims.nm;
+  int facexy_size = dims.ncell_x * dims.ncell_y * 
+    dims.ne * dims.na * NU * NOCTANT;
+  int facexz_size = dims.ncell_x * dims.ncell_z * 
+    dims.ne * dims.na * NU * NOCTANT;
+  int faceyz_size = dims.ncell_y * dims.ncell_z * 
+    dims.ne * dims.na * NU * NOCTANT;
+  int v_size = dims.nm * dims.na * NOCTANT;
+  int vi_h_size = dims.ncell_x * dims.ncell_y * dims.ncell_z * 
+    dims.ne * dims.nm * NU;
+  int vo_h_size = dims.ncell_x * dims.ncell_y * dims.ncell_z * 
+    dims.ne * dims.nm * NU;
+  int vs_local_size = dims.na * NU * dims.ne * NOCTANT * dims.ncell_x * dims.ncell_y;
 
   /*--- Solve for Z dimension, and check bounds.
     The sum of the dimensions should equal the wavefront number.
@@ -353,6 +378,8 @@ void Sweeper_in_gridcell(  Dimensions dims,
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for simd collapse(3)
+//#pragma omp target map(tofrom:vs_local[0:vs_local_size]) map(to:v_a_from_m[0:v_size],vi_h[0:vi_h_size])
+#pragma omp target teams distribute parallel for collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
@@ -411,14 +438,14 @@ void Sweeper_in_gridcell(  Dimensions dims,
       }
       }
 
+#pragma omp target update from(vs_local[0:vs_local_size])
       /*--------------------*/
       /*---Perform solve---*/
       /*--------------------*/
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-//#pragma omp target data map(to:vs_local,dims,facexy,facexz,faceyz,ix,iy,iz,ie,ia,octant,octant_in_block,noctant_per_block)
-//#pragma omp target teams distribute parallel for simd collapse(2)
+//#pragma omp target teams distribute parallel for collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(2)
@@ -431,6 +458,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
 			     octant, octant_in_block, noctant_per_block);
       }
 
+
       /*--------------------*/
       /*---Transform state vector from angles to moments---*/
       /*--------------------*/
@@ -441,7 +469,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-//#pragma omp target teams distribute parallel for simd collapse(3)
+//#pragma omp target teams distribute parallel for collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
@@ -479,7 +507,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
 	/*--- ref_state inline ---*/
 /* FIX: use omp critical ??*/
 #ifdef USE_OPENMP4
-#pragma omp atomic update
+//#pragma omp atomic update
 #endif
 #ifdef USE_ACC
 #pragma acc atomic update
@@ -495,10 +523,12 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
       } /*---ie---*/
 
+//#pragma omp target update from(vo_h[0:vo_h_size])
+
 	} /*--- iz ---*/
 }
 #ifdef USE_OPENMP4
-#pragma omp end declare target
+//#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
@@ -725,7 +755,7 @@ void Sweeper_sweep(
 {
 
 #ifdef USE_OPENMP4
-//#pragma omp target teams distribute collapse(3)
+#pragma omp target teams distribute collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang collapse(3)
@@ -764,6 +794,7 @@ void Sweeper_sweep(
 	  = Quantities_init_face(ia, ie, iu, scalefactor_space, octant);
       }
 
+#pragma omp target update from(faceyz[0:faceyz_size])
 /*--- #pragma acc parallel ---*/
  }
      
