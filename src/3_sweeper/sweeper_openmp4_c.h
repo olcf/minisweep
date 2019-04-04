@@ -294,7 +294,7 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
     } /*---for---*/
 }
 #ifdef USE_OPENMP4
-//#pragma omp end declare target
+#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
@@ -446,7 +446,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
-#prgma omp parallel for collapse(2)
+#pragma omp target parallel for collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(2)
@@ -862,7 +862,7 @@ for( octant=0; octant<NOCTANT; ++octant )
        if (dir_y==DIR_UP && dir_x==DIR_UP) {
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
-#pragma omp teams distribute collapse(2)
+#pragma omp target teams distribute collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang, collapse(2)
@@ -880,7 +880,7 @@ for( octant=0; octant<NOCTANT; ++octant )
        } else if (dir_y==DIR_UP && dir_x==DIR_DN) {
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
-#pragma omp teams distribute collapse(2)
+#pragma omp target teams distribute collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang, collapse(2)
@@ -897,7 +897,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 	     } /*---ix/iy---*/
        } else if (dir_y==DIR_DN && dir_x==DIR_UP) {
 #ifdef USE_OPENMP4
-#pragma omp teams distribute collapse(2)
+#pragma omp target teams distribute collapse(2)
 //#pragma omp target teams distribute parallel for collapse(2)
 #endif
 #ifdef USE_ACC
@@ -916,7 +916,7 @@ for( octant=0; octant<NOCTANT; ++octant )
        } else {
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
-#pragma omp teams distribute collapse(2)
+#pragma omp target teams distribute collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang, collapse(2)
@@ -942,7 +942,7 @@ for( octant=0; octant<NOCTANT; ++octant )
  }   /*--- #pragma acc enter data ---*/
 
 #ifdef USE_OPENMP4
-#pragma omp wait
+#pragma omp barrier
 #endif
 
 #ifdef USE_ACC
