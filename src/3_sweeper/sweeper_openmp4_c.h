@@ -81,7 +81,7 @@ void Sweeper_destroy( Sweeper* sweeper,
 /*---Quantities_init_face inline routine---*/
 
 #ifdef USE_OPENMP4
-//#pragma omp declare target
+#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -110,14 +110,14 @@ P Quantities_init_face(int ia, int ie, int iu, int scalefactor_space, int octant
 
 }
 #ifdef USE_OPENMP4
-//#pragma omp end declare target
+#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
 /*---Quantities_scalefactor_space_ inline routine---*/
 
 #ifdef USE_OPENMP4
-//#pragma omp declare target
+#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -140,11 +140,11 @@ int Quantities_scalefactor_space_inline(int ix, int iy, int iz)
   return scalefactor_space;
 }
 #ifdef USE_OPENMP4
-//#pragma omp end declare target
+#pragma omp end declare target
 #endif
 
 #ifdef USE_OPENMP4
-//#pragma omp declare target
+#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine seq
@@ -300,7 +300,7 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
 /*===========================================================================*/
 /*---In-gricell computations---*/
 #ifdef USE_OPENMP4
-//#pragma omp declare target
+#pragma omp declare target
 #endif
 #ifdef USE_ACC
 #pragma acc routine vector
@@ -379,7 +379,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for simd collapse(3)
 //#pragma omp target map(tofrom:vs_local[0:vs_local_size]) map(to:v_a_from_m[0:v_size],vi_h[0:vi_h_size])
-#pragma omp target teams distribute parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
@@ -438,7 +438,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
       }
       }
 
-#pragma omp target update from(vs_local[0:vs_local_size])
+// #pragma omp target update from(vs_local[0:vs_local_size])
       /*--------------------*/
       /*---Perform solve---*/
       /*--------------------*/
@@ -446,6 +446,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
+#prgma omp parallel for collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(2)
@@ -470,6 +471,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
@@ -507,7 +509,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
 	/*--- ref_state inline ---*/
 /* FIX: use omp critical ??*/
 #ifdef USE_OPENMP4
-//#pragma omp atomic update
+#pragma omp atomic update
 #endif
 #ifdef USE_ACC
 #pragma acc atomic update
@@ -528,7 +530,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
 	} /*--- iz ---*/
 }
 #ifdef USE_OPENMP4
-//#pragma omp end declare target
+#pragma omp end declare target
 #endif
 
 /*===========================================================================*/
@@ -647,7 +649,7 @@ void Sweeper_sweep(
     ---*/
 
 #ifdef USE_OPENMP4
-#pragma omp target data map(to:facexy[:facexy_size])
+#pragma omp target map(to:facexy[:facexy_size])
 #endif
 #ifdef USE_ACC
 #pragma acc parallel present(facexy[:facexy_size])
@@ -656,7 +658,7 @@ void Sweeper_sweep(
 
 /* FIX: maybe collapse(6) */
 #ifdef USE_OPENMP4
-//#pragma omp target teams distribute parallel for collapse(3)
+#pragma omp teams distribute collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang collapse(3)
@@ -668,6 +670,7 @@ void Sweeper_sweep(
 #ifdef USE_OPENMP4
 //#pragma omp target data map(tofrom:facexy[:facexy_size],facexz[:facexz_size]), map(to:ix,iy,iz,octant)
 //#pragma omp target teams distribute parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector collapse(3)
@@ -699,13 +702,16 @@ void Sweeper_sweep(
 /*--- #pragma acc parallel ---*/
  }
 
+#ifdef USE_OPENMP4
+#pragma omp target map(to: facexz[:facexz_size])
+#endif
 #ifdef USE_ACC
 #pragma acc parallel present(facexz[:facexz_size])
 #endif
 {
  
 #ifdef USE_OPENMP4
-//#pragma omp target teams distribute parallel for collapse(3)
+#pragma omp teams distribute collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang collapse(3)
@@ -714,7 +720,7 @@ void Sweeper_sweep(
       for( iz=0; iz<dim_z; ++iz )
       for( ix=0; ix<dim_x; ++ix )
 #ifdef USE_OPENMP4
-//#pragma omp target teams distribute parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector collapse(3)
@@ -747,7 +753,7 @@ void Sweeper_sweep(
  }
 
 #ifdef USE_OPENMP4
-#pragma omp target data map(to:faceyz[:faceyz_size])
+#pragma omp target map(to:faceyz[:faceyz_size])
 #endif
 #ifdef USE_ACC
 #pragma acc parallel present(faceyz[:faceyz_size])
@@ -755,7 +761,7 @@ void Sweeper_sweep(
 {
 
 #ifdef USE_OPENMP4
-#pragma omp target teams distribute collapse(3)
+#pragma omp teams distribute collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang collapse(3)
@@ -766,6 +772,7 @@ void Sweeper_sweep(
 #ifdef USE_OPENMP4
 //#pragma omp target data map(from:faceyz[:faceyz_size])
 //#pragma omp target teams distribute parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector collapse(3)
@@ -794,7 +801,7 @@ void Sweeper_sweep(
 	  = Quantities_init_face(ia, ie, iu, scalefactor_space, octant);
       }
 
-#pragma omp target update from(faceyz[0:faceyz_size])
+//#pragma omp target update from(faceyz[0:faceyz_size])
 /*--- #pragma acc parallel ---*/
  }
      
@@ -844,6 +851,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 
 /* FIX: possibly CPU threads here? or CPU tasks? ? parallel nowait ?*/
 
+#pragma acc target nowait depend(out:octant)
 #endif
 #ifdef USE_ACC
 #pragma acc parallel async(octant)
@@ -854,6 +862,7 @@ for( octant=0; octant<NOCTANT; ++octant )
        if (dir_y==DIR_UP && dir_x==DIR_UP) {
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
+#pragma omp teams distribute collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang, collapse(2)
@@ -871,6 +880,7 @@ for( octant=0; octant<NOCTANT; ++octant )
        } else if (dir_y==DIR_UP && dir_x==DIR_DN) {
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
+#pragma omp teams distribute collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang, collapse(2)
@@ -887,6 +897,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 	     } /*---ix/iy---*/
        } else if (dir_y==DIR_DN && dir_x==DIR_UP) {
 #ifdef USE_OPENMP4
+#pragma omp teams distribute collapse(2)
 //#pragma omp target teams distribute parallel for collapse(2)
 #endif
 #ifdef USE_ACC
@@ -905,6 +916,7 @@ for( octant=0; octant<NOCTANT; ++octant )
        } else {
 #ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
+#pragma omp teams distribute collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang, collapse(2)
@@ -929,7 +941,14 @@ for( octant=0; octant<NOCTANT; ++octant )
  
  }   /*--- #pragma acc enter data ---*/
 
+#ifdef USE_OPENMP4
+#pragma omp wait
+#endif
+
+#ifdef USE_ACC
 #pragma acc wait
+#endif
+
    
   /*--- Data transfer of results to the host ---*/
 #ifdef USE_OPENMP4
