@@ -547,11 +547,13 @@ void Sweeper_sweep(
 
   /*--- Set OpenACC device based on MPI rank ---*/
 #ifdef USE_MPI
-  int num_devices = 1; /* acc_get_num_devices(acc_device_default);*/
+#ifdef USE_OPENMP4
+  int num_devices = omp_get_num_devices();
   int mpi_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   int device_num = mpi_rank % num_devices;
-  /*acc_set_device_num( device_num, acc_device_default );*/
+  omp_set_default_device(device_num);
+#endif
 #endif
 
   /*---Declarations---*/
