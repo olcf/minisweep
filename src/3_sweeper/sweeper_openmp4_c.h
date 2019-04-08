@@ -197,10 +197,8 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
   int vs_local_size = dims.na * NU * dims.ne * NOCTANT * dims.ncell_x * dims.ncell_y;
 
 #ifdef USE_OPENMP4
-//#pragma omp target data map(to:dims,octant,scalefactor_space_r,facexy[0:facexy_size],vs_local[0:vs_local_size])
-//#pragma omp target parallel for
+// no equivalent
 #endif
-
 #ifdef USE_ACC
 #pragma acc loop seq
 #endif
@@ -292,6 +290,7 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
 				  0 )))))) ] = result_scaled;
 
     } /*---for---*/
+
 }
 #ifdef USE_OPENMP4
 #pragma omp end declare target
@@ -405,6 +404,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
 	/* reset reduction */
 	P result = (P)0;
 #ifdef USE_OPENMP4
+// no equivalent
 #endif
 #ifdef USE_ACC
 #pragma acc loop seq
@@ -484,6 +484,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
       {
         P result = (P)0;
 #ifdef USE_OPENMP4
+// no equivalent
 #endif
 #ifdef USE_ACC
 #pragma acc loop seq
