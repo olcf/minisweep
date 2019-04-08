@@ -860,6 +860,37 @@ for( octant=0; octant<NOCTANT; ++octant )
 #endif
      {
 
+//====================
+//#if 1
+#ifdef REVISION_OF_ROBBIE_OSCAR_CODE
+//====================
+
+#ifdef USE_OPENMP4
+//#pragma omp target teams distribute parallel for collapse(2)
+//#pragma omp target teams distribute collapse(2) 
+#endif
+#ifdef USE_ACC
+#pragma acc loop independent gang, collapse(2)
+#endif
+	 for( int iy_updown=0; iy_updown<dim_y; ++iy_updown )
+	   for( int ix_updown=0; ix_updown<dim_x; ++ix_updown )
+	     {
+
+               const int iy = dir_y==DIR_UP ? iy_updown : dim_y - 1 - iy_updown;
+               const int ix = dir_x==DIR_UP ? ix_updown : dim_x - 1 - ix_updown;
+
+	       /*--- In-gridcell computations ---*/
+	       Sweeper_in_gridcell( dims, wavefront, octant, ix, iy,
+				    dir_x, dir_y, dir_z,
+				    facexy, facexz, faceyz,
+				    v_a_from_m, v_m_from_a,
+				    vi_h, vo_h, vs_local );
+	     } /*---ix/iy---*/
+
+//====================
+#else // original Robbie / Oscar code
+//====================
+
        /*---Loop over cells, in proper direction---*/
        if (dir_y==DIR_UP && dir_x==DIR_UP) {
 #ifdef USE_OPENMP4
@@ -933,7 +964,11 @@ for( octant=0; octant<NOCTANT; ++octant )
 				    v_a_from_m, v_m_from_a,
 				    vi_h, vo_h, vs_local );	 
 	     } /*---ix/iy---*/
-       }
+       } // if
+
+//====================
+#endif // Robbie / Oscar code
+//====================
 
      } /*--- #pragma acc parallel ---*/
 
