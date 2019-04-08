@@ -313,7 +313,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
   }
 
   /*--- Bounds check ---*/
-  if ((iz >= 0 && iz < dim_z) )// &&
+  if ((iz >= 0 && iz < dim_z) )/* &&*/
     /* ((dir_z==DIR_UP && iz <= wavefront) || */
     /*  (dir_z==DIR_DN && (dim_z-1-iz) <= wavefront))) */
     {
@@ -337,7 +337,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
       for( iu=0; iu<NU; ++iu )
       for( ia=0; ia<dim_na; ++ia )
       { 
-	// reset reduction
+	/* reset reduction*/
 	P result = (P)0;
 #pragma acc loop seq
         for( im=0; im < dim_nm; ++im )
@@ -451,13 +451,13 @@ void Sweeper_sweep(
 
   /*--- Set OpenACC device based on MPI rank ---*/
 #ifdef USE_MPI
-  //int num_devices = acc_get_num_devices(acc_device_default);
+  /*int num_devices = acc_get_num_devices(acc_device_default);*/
   int num_devices = acc_get_num_devices(acc_device_nvidia);
   int mpi_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   int device_num = mpi_rank % num_devices;
   printf("%d: num_devices = %d, device_num = %d\n",mpi_rank,num_devices,device_num);
-  //acc_set_device_num( device_num, acc_device_default );
+  /*acc_set_device_num( device_num, acc_device_default );*/
   acc_set_device_num( device_num, acc_device_nvidia );
 #endif
 
@@ -645,15 +645,7 @@ void Sweeper_sweep(
 /*--- #pragma acc parallel ---*/
  }
      
-#pragma acc data present(v_a_from_m[:v_size], \
-			     v_m_from_a[:v_size],   \
-			     vi_h[:vi_h_size],	    \
-			     vo_h[:vo_h_size], \
-                             facexy[:facexy_size],				    \
-	                     facexz[:facexz_size],			    \
-	                     faceyz[:faceyz_size], \
-			     dims),			   \
-  create(vs_local[vs_local_size])
+#pragma acc data present(v_a_from_m[:v_size], v_m_from_a[0:v_size], vi_h[0:vi_h_size], vo_h[0:vo_h_size], facexy[0:facexy_size], facexz[0:facexz_size], faceyz[0:faceyz_size], dims), create(vs_local[0:vs_local_size])
  {
 
 /*---Loop over octants---*/
@@ -696,7 +688,8 @@ for( octant=0; octant<NOCTANT; ++octant )
 				    vi_h, vo_h, vs_local );
 	     } /*---ix/iy---*/
        } else if (dir_y==DIR_UP && dir_x==DIR_DN) {
-#pragma acc loop independent gang, collapse(2)
+/*#pragma acc loop independent gang, collapse(2) */
+#pragma acc loop independent gang
 	 for( iy=0; iy<dim_y; ++iy )
 	   for( ix=dim_x-1; ix>=0; --ix )
 	     {
@@ -708,7 +701,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 				    vi_h, vo_h, vs_local );	 
 	     } /*---ix/iy---*/
        } else if (dir_y==DIR_DN && dir_x==DIR_UP) {
-#pragma acc loop independent gang, collapse(2)
+#pragma acc loop independent gang
 	 for( iy=dim_y-1; iy>=0; --iy )
 	   for( ix=0; ix<dim_x; ++ix )
 	     {
@@ -720,7 +713,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 				    vi_h, vo_h, vs_local );	 
 	     } /*---ix/iy---*/
        } else {
-#pragma acc loop independent gang, collapse(2)
+#pragma acc loop independent gang
 	 for( iy=dim_y-1; iy>=0; --iy )
 	   for( ix=dim_x-1; ix>=0; --ix )
 	     {
