@@ -521,7 +521,7 @@ void Sweeper_in_gridcell(  Dimensions dims,
              0 ))))))] += result;
       }
       } /*---ie---*/
-#pragma omp target update from(vo_h[0:vo_h_size])
+//#pragma omp target update from(vo_h[0:vo_h_size])
 	} /*--- iz ---*/
 } /*--- end of Sweeper_in_gridcell */
 #ifdef USE_OPENMP4
@@ -857,9 +857,6 @@ for( octant=0; octant<NOCTANT; ++octant )
 //====================
 
 #ifdef USE_OPENMP4
-//#pragma omp target update from(vo_h[0:vo_h_size])//,vi_h[0:vi_h_size],vs_local[0:vs_local_size],v_a_from_m[0:v_size])
-#endif
-#ifdef USE_OPENMP4
 //#pragma omp target teams distribute parallel for collapse(2)
 #endif
 #ifdef USE_ACC
@@ -880,6 +877,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 				    vi_h, vo_h, vs_local );
 	     } /*---ix/iy---*/
 
+#pragma omp target update from(vo_h[0:vo_h_size])
 //====================
 #else // original Robbie / Oscar code
 //====================
