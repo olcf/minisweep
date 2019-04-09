@@ -376,8 +376,8 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-#pragma omp target teams distribute parallel for simd collapse(3)
-//#pragma omp parallel for collapse(3)
+//#pragma omp target teams distribute parallel for simd collapse(3)
+#pragma omp parallel for simd collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
@@ -443,8 +443,8 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-#pragma omp target teams distribute parallel for collapse(2)
-//#pragma omp parallel for collapse(2)
+//#pragma omp target teams distribute parallel for collapse(2)
+#pragma omp parallel for collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(2)
@@ -467,8 +467,8 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-#pragma omp target teams distribute parallel for collapse(3)
-//#pragma omp parallel for collapse(3)
+//#pragma omp target teams distribute parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
@@ -857,7 +857,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 //====================
 
 #ifdef USE_OPENMP4
-//#pragma omp target teams distribute parallel for collapse(2)
+#pragma omp target teams distribute parallel for collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent gang, collapse(2)
