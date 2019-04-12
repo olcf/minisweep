@@ -376,8 +376,9 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-#pragma omp target teams distribute parallel for simd collapse(3)
 //#pragma omp parallel for collapse(3)
+//#pragma omp target teams distribute parallel for collapse(3)
+#pragma omp target teams distribute parallel for simd collapse(3)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(3)
@@ -443,8 +444,8 @@ void Sweeper_in_gridcell(  Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP4
-#pragma omp target teams distribute parallel for collapse(2)
 //#pragma omp parallel for collapse(2)
+#pragma omp target teams distribute parallel for simd collapse(2)
 #endif
 #ifdef USE_ACC
 #pragma acc loop independent vector, collapse(2)
@@ -798,10 +799,7 @@ void Sweeper_sweep(
  }
      
 #ifdef USE_OPENMP4
-//#pragma omp target update from(faceyz[0:faceyz_size])
-#pragma omp target enter data \
-  map(alloc: vs_local[:vs_local_size]), \
-  map(to:v_a_from_m[:v_size],v_m_from_a[:v_size],vo_h[:vo_h_size],facexy[:facexy_size],facexz[:facexz_size],faceyz[:faceyz_size],dims)
+#pragma omp target enter data map(alloc: vs_local[:vs_local_size])
 #endif
 #ifdef USE_ACC
 #pragma acc data present(v_a_from_m[:v_size], \
