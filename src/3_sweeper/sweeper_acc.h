@@ -64,24 +64,6 @@ static int Sweeper_noctant_per_block( const Sweeper* sweeper )
 }
 
 /*===========================================================================*/
-/*---In-gricell computations---*/
-#pragma acc routine vector
-void Sweeper_in_gridcell(  Dimensions dims,
-			     int wavefront,
-			     int octant,
-			     int ix, int iy,
-			     int dir_x, int dir_y, int dir_z,
-			     P* __restrict__ facexy,
-			     P* __restrict__ facexz,
-			     P* __restrict__ faceyz,
-			     P* v_a_from_m,
-			     P* v_m_from_a,
-			     P* vi_h,
-			     P* vo_h,
-			     P* vs_local
-			   );
-
-/*===========================================================================*/
 /*---Perform a sweep---*/
 
 void Sweeper_sweep(
