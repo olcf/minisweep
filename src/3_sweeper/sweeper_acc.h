@@ -17,6 +17,9 @@
 #include "arguments.h"
 #include "quantities.h"
 
+#include "faces_kba.h"
+#include "stepscheduler_kba.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -27,12 +30,21 @@ extern "C"
 
 typedef struct
 {
-  P* __restrict__  facexy;
-  P* __restrict__  facexz;
-  P* __restrict__  faceyz;
+  //P* __restrict__  facexy;
+  //P* __restrict__  facexz;
+  //P* __restrict__  faceyz;
   P* __restrict__  vslocal;
 
+  int              nblock_z;
+  int              nblock_octant;
+  int              noctant_per_block;
+
   Dimensions       dims;
+  Dimensions       dims_b;
+
+  StepScheduler    stepscheduler;
+
+  Faces            faces;
 } Sweeper;
 
 /*===========================================================================*/
