@@ -80,6 +80,7 @@ void Sweeper_create( Sweeper*          sweeper,
 void Sweeper_destroy( Sweeper* sweeper,
                       Env*     env );
 
+#if 0
 /*===========================================================================*/
 /*---Number of octants in an octant block---*/
 
@@ -87,6 +88,7 @@ static int Sweeper_noctant_per_block( const Sweeper* sweeper )
 {
   return sweeper->noctant_per_block;
 }
+#endif
 
 /*===========================================================================*/
 /*---Thread counts for amu for execution target as understood by the host---*/
@@ -143,6 +145,7 @@ static inline int Sweeper_nvilocal_( Sweeper* sweeper,
 static inline int Sweeper_nvslocal_( Sweeper* sweeper,
                                       Env*     env )
 {
+#ifndef USE_ACCELDIR
   return Env_cuda_is_using_device( env )
       ?
          Sweeper_nthread_a( sweeper, env ) *
@@ -160,6 +163,14 @@ static inline int Sweeper_nvslocal_( Sweeper* sweeper,
          sweeper->nthread_y *
          sweeper->nthread_z
        ;
+#else
+  return sweeper->dims.na *
+         NU *
+         sweeper->dims.ne *
+         NOCTANT *
+         sweeper->dims.ncell_x *
+         sweeper->dims.ncell_y;
+#endif
 }
 
 /*---------------------------------------------------------------------------*/

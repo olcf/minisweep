@@ -29,80 +29,10 @@ extern "C"
 #endif
 
 /*===========================================================================*/
-/*---Null object---*/
-
-Sweeper Sweeper_null()
-{
-  Sweeper result;
-  memset( (void*)&result, 0, sizeof(Sweeper) );
-  return result;
-}
-
-/*===========================================================================*/
-/*---Pseudo-constructor for Sweeper struct---*/
-
-void Sweeper_create( Sweeper*          sweeper,
-                     Dimensions        dims,
-                     const Quantities* quan,
-                     Env*              env,
-                     Arguments*        args )
-{
-  sweeper->nblock_z = 64; //FIX
-  sweeper->noctant_per_block = NOCTANT;
-  sweeper->nblock_octant     = NOCTANT / sweeper->noctant_per_block;
-
-  const int dims_b_ncell_z = dims.ncell_z / sweeper->nblock_z;
-
-  sweeper->dims = dims;
-  sweeper->dims_b = sweeper->dims;
-  sweeper->dims_b.ncell_z = dims_b_ncell_z;
-
-  StepScheduler_create( &(sweeper->stepscheduler),
-                              sweeper->nblock_z, sweeper->nblock_octant, env );
-
-  const Bool_t is_face_comm_async = Bool_false;
-
-  Faces_create( &(sweeper->faces), sweeper->dims_b,
-                sweeper->noctant_per_block, is_face_comm_async, env );
-
-  /*---Allocate arrays---*/
-
-  sweeper->vslocal = malloc_host_P( dims.na * NU * dims.ne * NOCTANT * dims.ncell_x * dims.ncell_y );
-  //sweeper->facexy  = malloc_host_P( dims.ncell_x * dims.ncell_y * dims.ne *
-  //                       dims.na * NU * NOCTANT);
-  //sweeper->facexz  = malloc_host_P( dims.ncell_x * dims.ncell_z * dims.ne *
-  //                       dims.na * NU * NOCTANT);
-  //sweeper->faceyz  = malloc_host_P( dims.ncell_y * dims.ncell_z * dims.ne *
-  //                       dims.na * NU * NOCTANT);
-
-}
-
-/*===========================================================================*/
-/*---Pseudo-destructor for Sweeper struct---*/
-
-void Sweeper_destroy( Sweeper* sweeper,
-                      Env*     env )
-{
-  /*---Deallocate arrays---*/
-
-  free_host_P( sweeper->vslocal );
-  //free_host_P( sweeper->facexy );
-  //free_host_P( sweeper->facexz );
-  //free_host_P( sweeper->faceyz );
-
-  sweeper->vslocal = NULL;
-  //sweeper->facexy  = NULL;
-  //sweeper->facexz  = NULL;
-  //sweeper->faceyz  = NULL;
-
-  Faces_destroy( &(sweeper->faces) );
-}
-
-/*===========================================================================*/
 /*---Quantities_init_face inline routine---*/
 
 #pragma acc routine seq
-P Quantities_init_face_inline(int ia, int ie, int iu, int scalefactor_space, int octant)
+P Quantities_init_face_acceldir(int ia, int ie, int iu, int scalefactor_space, int octant)
 {
   /*--- Quantities_affinefunction_ inline ---*/
   return ( (P) (1 + ia) ) 
@@ -128,7 +58,7 @@ P Quantities_init_face_inline(int ia, int ie, int iu, int scalefactor_space, int
 /*---Quantities_scalefactor_space_ inline routine---*/
 
 #pragma acc routine seq
-int Quantities_scalefactor_space_inline(int ix_g, int iy_g, int iz_g)
+int Quantities_scalefactor_space_acceldir(int ix_g, int iy_g, int iz_g)
 {
   int result = 0;
 
@@ -152,7 +82,7 @@ int Quantities_scalefactor_space_inline(int ix_g, int iy_g, int iz_g)
 /*===========================================================================*/
 
 #pragma acc routine seq
-void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz, P* faceyz,
+void Quantities_solve_acceldir(P* vs_local, Dimensions dims, P* facexy, P* facexz, P* faceyz,
                              int ix, int iy, int iz,
                              int ix_g, int iy_g, int iz_g,
                              int ie, int ia,
@@ -179,14 +109,14 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
   const P scalefactor_octant_r = ((P)1) / scalefactor_octant;
 
   /*---Quantities_scalefactor_space_ inline ---*/
-  const P scalefactor_space = (P)Quantities_scalefactor_space_inline(ix_g, iy_g, iz_g);
+  const P scalefactor_space = (P)Quantities_scalefactor_space_acceldir(ix_g, iy_g, iz_g);
   const P scalefactor_space_r = ((P)1) / scalefactor_space;
   const P scalefactor_space_x_r = ((P)1) /
-    Quantities_scalefactor_space_inline( ix_g - dir_x, iy_g, iz_g );
+    Quantities_scalefactor_space_acceldir( ix_g - dir_x, iy_g, iz_g );
   const P scalefactor_space_y_r = ((P)1) /
-    Quantities_scalefactor_space_inline( ix_g, iy_g - dir_y, iz_g );
+    Quantities_scalefactor_space_acceldir( ix_g, iy_g - dir_y, iz_g );
   const P scalefactor_space_z_r = ((P)1) /
-    Quantities_scalefactor_space_inline( ix_g, iy_g, iz_g - dir_z );
+    Quantities_scalefactor_space_acceldir( ix_g, iy_g, iz_g - dir_z );
 
 #pragma acc loop seq
   for( iu=0; iu<NU; ++iu )
@@ -199,17 +129,6 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
                            iy + dims.ncell_y * (
                            octant + NOCTANT * (
                            0))))));
-#if 0
-if (iu==0 && octant == 4)
-printf("%i %f\n", 1,
-                facexy[ia + dims.na      * (
-                        iu + NU           * (
-                        ie + dims.ne      * (
-                        ix + dims.ncell_x * (
-                        iy + dims.ncell_y * (
-                        octant + NOCTANT * (
-                        0 )))))) ]);
-#endif
 
       const P result = ( vs_local[vs_local_index] * scalefactor_space_r + 
                (
@@ -257,12 +176,6 @@ printf("%i %f\n", 1,
                ) 
                * scalefactor_octant_r ) * scalefactor_space;
 
-#if 0
-if (iu==0 && octant == 4)
-printf("%i %i %i %f %f %f %f %f %f %f\n", ix_g, iy_g, iz_g, scalefactor_space_r, scalefactor_space_z_r, scalefactor_space_y_r, scalefactor_space_x_r, scalefactor_octant_r, scalefactor_space);
-#endif
-
-
       vs_local[vs_local_index] = result;
 
       const P result_scaled = result * scalefactor_octant;
@@ -292,18 +205,6 @@ printf("%i %i %i %f %f %f %f %f %f %f\n", ix_g, iy_g, iz_g, scalefactor_space_r,
              iz + dims.ncell_z * (
              octant + NOCTANT * (
              0 )))))) ] = result_scaled;
-
-#if 0
-if (iu==0 && octant == 4)
-printf("%i %f %f\n", 2,
-                facexy[ia + dims.na      * (
-                        iu + NU           * (
-                        ie + dims.ne      * (
-                        ix + dims.ncell_x * (
-                        iy + dims.ncell_y * (
-                        octant + NOCTANT * (
-                        0 )))))) ], result_scaled);
-#endif
 
     } /*---for---*/
 }
@@ -436,7 +337,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       for( ie=0; ie<dims_ne; ++ie )
       for( ia=0; ia<dims_na; ++ia )
       {
-        Quantities_solve_inline(vs_local, dims, facexy, facexz, faceyz, 
+        Quantities_solve_acceldir(vs_local, dims, facexy, facexz, faceyz, 
                              ix, iy, iz,
                              ix_g, iy_g, iz_g,
                              ie, ia,
@@ -496,9 +397,9 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 }
 
 /*===========================================================================*/
-/*---Perform a sweep---*/
+/*---Perform a sweep on a block---*/
 
-void Sweeper_sweep_block(
+void Sweeper_sweep_block_acceldir(
   Sweeper*               sweeper,
         P* __restrict__  vo,
   const P* __restrict__  vi,
@@ -562,7 +463,7 @@ void Sweeper_sweep_block(
   int dims_b_nm = dims_b.nm;
 
   /*--- Array Pointers ---*/
-  P* vs_local = sweeper->vslocal;
+  P* vs_local = sweeper->vslocal_host_;
 
   /*--- Array Sizes ---*/
   int facexy_size = dims_b.ncell_x * dims_b.ncell_y * 
@@ -672,13 +573,13 @@ make sure to say "present"
         const int dir_z = Dir_z( octant );
         const int iz = dir_z == DIR_UP ? -1 : dims_b_ncell_z;
 
-        const int ix_g = ix;
-        const int iy_g = iy;
+        const int ix_g = ix + dims_b_ncell_x * proc_x;
+        const int iy_g = iy + dims_b_ncell_y * proc_y;
         const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
         /*--- Quantities_scalefactor_space_ inline ---*/
         const int scalefactor_space
-          = Quantities_scalefactor_space_inline(ix, iy, iz_g);
+          = Quantities_scalefactor_space_acceldir(ix_g, iy_g, iz_g);
 
         /*--- ref_facexy inline ---*/
         facexy[ia + dims_b_na      * (
@@ -690,7 +591,7 @@ make sure to say "present"
                0 )))))) ]
 
         /*--- Quantities_init_face routine ---*/
-          = Quantities_init_face_inline(ia, ie, iu, scalefactor_space, octant);
+          = Quantities_init_face_acceldir(ia, ie, iu, scalefactor_space, octant);
     } /*---for---*/
 
     } /*--- #pragma acc parallel ---*/
@@ -714,15 +615,15 @@ make sure to say "present"
       const int dir_y = Dir_y( octant );
       const int iy = dir_y == DIR_UP ? -1 : dims_b_ncell_y;
 
-      const int ix_g = ix;
-      const int iy_g = iy;
+      const int ix_g = ix + dims_b_ncell_x * proc_x;
+      const int iy_g = iy + dims_b_ncell_y * proc_y;
       const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
       if ((dir_y == DIR_UP && proc_y_min) || (dir_y == DIR_DN && proc_y_max)) {
 
         /*--- Quantities_scalefactor_space_ inline ---*/
         const int scalefactor_space
-          = Quantities_scalefactor_space_inline(ix, iy, iz_g);
+          = Quantities_scalefactor_space_acceldir(ix_g, iy_g, iz_g);
 
         /*--- ref_facexz inline ---*/
         facexz[ia + dims_b_na      * (
@@ -734,7 +635,7 @@ make sure to say "present"
                0 )))))) ]
 
           /*--- Quantities_init_face routine ---*/
-          = Quantities_init_face_inline(ia, ie, iu, scalefactor_space, octant);
+          = Quantities_init_face_acceldir(ia, ie, iu, scalefactor_space, octant);
 
       } /*---if---*/
     } /*---for---*/
@@ -759,15 +660,15 @@ make sure to say "present"
       const int dir_x = Dir_x( octant );
       const int ix = dir_x == DIR_UP ? -1 : dims_b_ncell_x;
 
-      const int ix_g = ix;
-      const int iy_g = iy;
+      const int ix_g = ix + dims_b_ncell_x * proc_x;
+      const int iy_g = iy + dims_b_ncell_y * proc_y;
       const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
       if ((dir_x == DIR_UP && proc_x_min) || (dir_x == DIR_DN && proc_x_max)) {
 
         /*--- Quantities_scalefactor_space_ inline ---*/
         const int scalefactor_space
-          = Quantities_scalefactor_space_inline(ix, iy, iz_g);
+          = Quantities_scalefactor_space_acceldir(ix_g, iy_g, iz_g);
 
         /*--- ref_faceyz inline ---*/
         faceyz[ia + dims_b_na      * (
@@ -779,7 +680,7 @@ make sure to say "present"
                0 )))))) ]
 
           /*--- Quantities_init_face routine ---*/
-          = Quantities_init_face_inline(ia, ie, iu, scalefactor_space, octant);
+          = Quantities_init_face_acceldir(ia, ie, iu, scalefactor_space, octant);
       } /*---if---*/
     } /*---for---*/
 
@@ -846,8 +747,8 @@ make sure to say "present"
         const int izwav = wavefront - ixwav - iywav;
         const int iz = dir_z==DIR_UP ? izwav : (dims_b_ncell_z-1) - izwav;
 
-        const int ix_g = ix;
-        const int iy_g = iy;
+        const int ix_g = ix + dims_b_ncell_x * proc_x;
+        const int iy_g = iy + dims_b_ncell_y * proc_y;
         const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
         /*--- In-gridcell computations ---*/
@@ -894,6 +795,112 @@ make sure to say "present"
 } /*---sweep---*/
 
 /*===========================================================================*/
+
+void Sweeper_sweep_block(
+  Sweeper*               sweeper,
+  Pointer*               vo,
+  Pointer*               vi,
+  int*                   is_block_init,
+  Pointer*               facexy,
+  Pointer*               facexz,
+  Pointer*               faceyz,
+  const Pointer*         a_from_m,
+  const Pointer*         m_from_a,
+  int                    step,
+  const Quantities*      quan,
+  Env*                   env ) {
+
+  Sweeper_sweep_block_acceldir(
+    sweeper,
+    Pointer_h( vo ),
+    Pointer_const_h( vi ),
+    is_block_init,
+    Pointer_h( facexy ),
+    Pointer_h( facexz ),
+    Pointer_h( faceyz ),
+    Pointer_const_h( a_from_m),
+    Pointer_const_h( m_from_a),
+    step,
+    quan,
+    env);
+}
+
+/*===========================================================================*/
+
+#ifndef SWEEPER_KBA_ACC
+
+/*===========================================================================*/
+/*---Null object---*/
+
+Sweeper Sweeper_null()
+{
+  Sweeper result;
+  memset( (void*)&result, 0, sizeof(Sweeper) );
+  return result;
+}
+
+/*===========================================================================*/
+/*---Pseudo-constructor for Sweeper struct---*/
+
+void Sweeper_create( Sweeper*          sweeper,
+                     Dimensions        dims,
+                     const Quantities* quan,
+                     Env*              env,
+                     Arguments*        args )
+{
+  sweeper->nblock_z = 1; //FIX
+  sweeper->noctant_per_block = NOCTANT;
+  sweeper->nblock_octant     = NOCTANT / sweeper->noctant_per_block;
+
+  const int dims_b_ncell_z = dims.ncell_z / sweeper->nblock_z;
+
+  sweeper->dims = dims;
+  sweeper->dims_b = sweeper->dims;
+  sweeper->dims_b.ncell_z = dims_b_ncell_z;
+
+  StepScheduler_create( &(sweeper->stepscheduler),
+                              sweeper->nblock_z, sweeper->nblock_octant, env );
+
+  const Bool_t is_face_comm_async = Bool_false;
+
+  Faces_create( &(sweeper->faces), sweeper->dims_b,
+                sweeper->noctant_per_block, is_face_comm_async, env );
+
+  /*---Allocate arrays---*/
+
+  sweeper->vslocal_host_
+    = malloc_host_P( dims.na * NU * dims.ne * NOCTANT * dims.ncell_x * dims.ncell_y );
+  //sweeper->facexy  = malloc_host_P( dims.ncell_x * dims.ncell_y * dims.ne *
+  //                       dims.na * NU * NOCTANT);
+  //sweeper->facexz  = malloc_host_P( dims.ncell_x * dims.ncell_z * dims.ne *
+  //                       dims.na * NU * NOCTANT);
+  //sweeper->faceyz  = malloc_host_P( dims.ncell_y * dims.ncell_z * dims.ne *
+  //                       dims.na * NU * NOCTANT);
+
+}
+
+/*===========================================================================*/
+/*---Pseudo-destructor for Sweeper struct---*/
+
+void Sweeper_destroy( Sweeper* sweeper,
+                      Env*     env )
+{
+  /*---Deallocate arrays---*/
+
+  free_host_P( sweeper->vslocal_host_ );
+  //free_host_P( sweeper->facexy );
+  //free_host_P( sweeper->facexz );
+  //free_host_P( sweeper->faceyz );
+
+  sweeper->vslocal_host_ = NULL;
+  //sweeper->facexy  = NULL;
+  //sweeper->facexz  = NULL;
+  //sweeper->faceyz  = NULL;
+
+  Faces_destroy( &(sweeper->faces) );
+}
+
+/*===========================================================================*/
 /*---Perform a sweep---*/
 
 void Sweeper_sweep(
@@ -922,28 +929,25 @@ void Sweeper_sweep(
 
     Sweeper_sweep_block(
       sweeper,
-      Pointer_h( vo ),
-      Pointer_h( vi ),
+      vo,
+      vi,
       is_block_init,
-      (P*) Pointer_h( &(sweeper->faces.facexy0) ),
-      (P*) Pointer_h( &(sweeper->faces.facexz0) ),
-      (P*) Pointer_h( &(sweeper->faces.faceyz0) ),
-      //sweeper->facexy,
-      //sweeper->facexz,
-      //sweeper->faceyz,
-      (P*) Pointer_const_h( & quan->a_from_m),
-      (P*) Pointer_const_h( & quan->m_from_a),
+      & sweeper->faces.facexy0,
+      & sweeper->faces.facexz0,
+      & sweeper->faces.faceyz0,
+      & quan->a_from_m,
+      & quan->m_from_a,
       step,
       quan,
       env);
 
   } // step
 
-
-
 }
 
 /*===========================================================================*/
+
+#endif /*---SWEEPER_KBA_ACC---*/
 
 #ifdef __cplusplus
 } /*---extern "C"---*/

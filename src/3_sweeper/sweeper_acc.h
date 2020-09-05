@@ -25,6 +25,8 @@ extern "C"
 {
 #endif
 
+#ifndef SWEEPER_KBA_ACC
+
 /*===========================================================================*/
 /*---Struct with pointers etc. used to perform sweep---*/
 
@@ -33,7 +35,7 @@ typedef struct
   //P* __restrict__  facexy;
   //P* __restrict__  facexz;
   //P* __restrict__  faceyz;
-  P* __restrict__  vslocal;
+  P* __restrict__  vslocal_host_;
 
   int              nblock_z;
   int              nblock_octant;
@@ -75,6 +77,7 @@ static int Sweeper_noctant_per_block( const Sweeper* sweeper )
   return 1;
 }
 
+#if 0
 /*===========================================================================*/
 /*---Perform a sweep---*/
 
@@ -82,6 +85,28 @@ void Sweeper_sweep(
   Sweeper*               sweeper,
   Pointer*               vo,
   Pointer*               vi,
+  const Quantities*      quan,
+  Env*                   env );
+#endif
+
+/*===========================================================================*/
+
+#endif /*---SWEEPER_KBA_ACC---*/
+
+/*===========================================================================*/
+/*---Perform a sweep on a block---*/
+
+void Sweeper_sweep_block(
+  Sweeper*               sweeper,
+  Pointer*               vo,
+  Pointer*               vi,
+  int*                   is_block_init,
+  Pointer*               facexy,
+  Pointer*               facexz,
+  Pointer*               faceyz,
+  const Pointer*         a_from_m,
+  const Pointer*         m_from_a,
+  int                    step,
   const Quantities*      quan,
   Env*                   env );
 

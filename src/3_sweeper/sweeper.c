@@ -22,6 +22,11 @@
 #include "sweeper_kba_c.h"
 #endif
 
+#ifdef SWEEPER_KBA_ACC
+  #include "sweeper_acc_c.h"
+  #include "sweeper_kba_c.h"
+#endif
+
 #ifdef SWEEPER_ACC
 #include "sweeper_acc_c.h"
 #endif

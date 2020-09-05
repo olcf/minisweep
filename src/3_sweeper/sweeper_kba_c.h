@@ -20,6 +20,9 @@
 #include "array_operations.h"
 #include "stepscheduler_kba.h"
 #include "sweeper_kba.h"
+#ifdef USE_ACC
+#include "sweeper_acc.h"
+#endif
 
 #include "sweeper_kba_kernels.h"
 
@@ -53,6 +56,9 @@ void Sweeper_create( Sweeper*          sweeper,
 
   Bool_t is_face_comm_async = Arguments_consume_int_or_default( args,
                                            "--is_face_comm_async", Bool_true );
+#ifdef USE_ACCELDIR
+  is_face_comm_async = Bool_false;
+#endif
 
   Insist( dims.ncell_x > 0 ?
                 "Currently required that all spatial blocks be nonempty" : 0 );
@@ -91,6 +97,9 @@ void Sweeper_create( Sweeper*          sweeper,
           "Threading not allowed for this case" : 0 );
 
   sweeper->noctant_per_block = sweeper->nthread_octant;
+#ifdef USE_ACCELDIR
+  sweeper->noctant_per_block = NOCTANT;
+#endif
   sweeper->nblock_octant     = NOCTANT / sweeper->noctant_per_block;
 
   /*====================*/
@@ -327,6 +336,8 @@ void Sweeper_destroy( Sweeper* sweeper,
 
   StepScheduler_destroy( &( sweeper->stepscheduler ) );
 }
+
+#ifndef SWEEPER_KBA_ACC
 
 /*===========================================================================*/
 /*---Extract SweeperLite from Sweeper---*/
@@ -581,6 +592,8 @@ void Sweeper_sweep_block(
                                do_block_init,
                                env);
 }
+
+#endif /*---SWEEPER_KBA_ACC---*/
 
 /*===========================================================================*/
 /*---Perform a sweep---*/

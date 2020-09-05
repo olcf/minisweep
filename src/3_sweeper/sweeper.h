@@ -20,33 +20,46 @@
 /* #endif */
 
 #ifdef USE_ACC
-#define SWEEPER_ACC
+  #ifdef USE_KBA
+    #define SWEEPER_KBA_ACC
+  #else
+    #define SWEEPER_ACC
+  #endif
 #else
 #ifdef USE_OPENMP4
-#define SWEEPER_OPENMP4
+  #define SWEEPER_OPENMP4
 #else
-#define SWEEPER_KBA
+  #ifndef SWEEPER_SIMPLE
+  #ifndef SWEEPER_TILEOCTANTS
+    #define SWEEPER_KBA
+  #endif
+  #endif
 #endif
 #endif
 
 #ifdef SWEEPER_SIMPLE
-#include "sweeper_simple.h"
+  #include "sweeper_simple.h"
 #endif
 
 #ifdef SWEEPER_TILEOCTANTS
-#include "sweeper_tileoctants.h"
+  #include "sweeper_tileoctants.h"
 #endif
 
 #ifdef SWEEPER_KBA
-#include "sweeper_kba.h"
+  #include "sweeper_kba.h"
+#endif
+
+#ifdef SWEEPER_KBA_ACC
+  #include "sweeper_kba.h"
+  #include "sweeper_acc.h"
 #endif
 
 #ifdef SWEEPER_ACC
-#include "sweeper_acc.h"
+  #include "sweeper_acc.h"
 #endif
 
 #ifdef SWEEPER_OPENMP4
-#include "sweeper_openmp4.h"
+  #include "sweeper_openmp4.h"
 #endif
 
 #endif /*---_sweep_h_---*/
