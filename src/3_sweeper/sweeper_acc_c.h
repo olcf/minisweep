@@ -47,7 +47,7 @@ void Sweeper_create( Sweeper*          sweeper,
                      Env*              env,
                      Arguments*        args )
 {
-  sweeper->nblock_z = 1; //FIX
+  sweeper->nblock_z = 64; //FIX
   sweeper->noctant_per_block = NOCTANT;
   sweeper->nblock_octant     = NOCTANT / sweeper->noctant_per_block;
 
@@ -152,8 +152,10 @@ int Quantities_scalefactor_space_inline(int ix_g, int iy_g, int iz_g)
 /*===========================================================================*/
 
 #pragma acc routine seq
-void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz, P* faceyz, 
-                             int ix, int iy, int iz, int ie, int ia,
+void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz, P* faceyz,
+                             int ix, int iy, int iz,
+                             int ix_g, int iy_g, int iz_g,
+                             int ie, int ia,
                              int octant, int octant_in_block, int noctant_per_block)
 {
   const int dir_x = Dir_x( octant );
@@ -177,14 +179,14 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
   const P scalefactor_octant_r = ((P)1) / scalefactor_octant;
 
   /*---Quantities_scalefactor_space_ inline ---*/
-  const P scalefactor_space = (P)Quantities_scalefactor_space_inline(ix, iy, iz);
+  const P scalefactor_space = (P)Quantities_scalefactor_space_inline(ix_g, iy_g, iz_g);
   const P scalefactor_space_r = ((P)1) / scalefactor_space;
   const P scalefactor_space_x_r = ((P)1) /
-    Quantities_scalefactor_space_inline( ix - dir_x, iy, iz );
+    Quantities_scalefactor_space_inline( ix_g - dir_x, iy_g, iz_g );
   const P scalefactor_space_y_r = ((P)1) /
-    Quantities_scalefactor_space_inline( ix, iy - dir_y, iz );
+    Quantities_scalefactor_space_inline( ix_g, iy_g - dir_y, iz_g );
   const P scalefactor_space_z_r = ((P)1) /
-    Quantities_scalefactor_space_inline( ix, iy, iz - dir_z );
+    Quantities_scalefactor_space_inline( ix_g, iy_g, iz_g - dir_z );
 
 #pragma acc loop seq
   for( iu=0; iu<NU; ++iu )
@@ -197,6 +199,17 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
                            iy + dims.ncell_y * (
                            octant + NOCTANT * (
                            0))))));
+#if 0
+if (iu==0 && octant == 4)
+printf("%i %f\n", 1,
+                facexy[ia + dims.na      * (
+                        iu + NU           * (
+                        ie + dims.ne      * (
+                        ix + dims.ncell_x * (
+                        iy + dims.ncell_y * (
+                        octant + NOCTANT * (
+                        0 )))))) ]);
+#endif
 
       const P result = ( vs_local[vs_local_index] * scalefactor_space_r + 
                (
@@ -244,6 +257,12 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
                ) 
                * scalefactor_octant_r ) * scalefactor_space;
 
+#if 0
+if (iu==0 && octant == 4)
+printf("%i %i %i %f %f %f %f %f %f %f\n", ix_g, iy_g, iz_g, scalefactor_space_r, scalefactor_space_z_r, scalefactor_space_y_r, scalefactor_space_x_r, scalefactor_octant_r, scalefactor_space);
+#endif
+
+
       vs_local[vs_local_index] = result;
 
       const P result_scaled = result * scalefactor_octant;
@@ -274,6 +293,18 @@ void Quantities_solve_inline(P* vs_local, Dimensions dims, P* facexy, P* facexz,
              octant + NOCTANT * (
              0 )))))) ] = result_scaled;
 
+#if 0
+if (iu==0 && octant == 4)
+printf("%i %f %f\n", 2,
+                facexy[ia + dims.na      * (
+                        iu + NU           * (
+                        ie + dims.ne      * (
+                        ix + dims.ncell_x * (
+                        iy + dims.ncell_y * (
+                        octant + NOCTANT * (
+                        0 )))))) ], result_scaled);
+#endif
+
     } /*---for---*/
 }
 
@@ -285,6 +316,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
                                   int wavefront,
                                   int octant,
                                   int ix, int iy,
+                                  int ix_g, int iy_g, int iz_g,
                                   int dir_x, int dir_y, int dir_z,
                                   P* __restrict__ facexy,
                                   P* __restrict__ facexz,
@@ -299,7 +331,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
                                   )
 {
   /*---Declarations---*/
-  int iz = 0;
+//  int iz = 0;
   int ie = 0;
   int im = 0;
   int ia = 0;
@@ -323,15 +355,20 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
     in a given octant.
   ---*/
 
-  int ixwav, iywav, izwav;
-  if (dir_x==DIR_UP) { ixwav = ix; } else { ixwav = (dims_ncell_x-1) - ix; }
-  if (dir_y==DIR_UP) { iywav = iy; } else { iywav = (dims_ncell_y-1) - iy; }
+  const int ixwav = dir_x==DIR_UP ? ix : (dims_ncell_x-1) - ix;
+  const int iywav = dir_y==DIR_UP ? iy : (dims_ncell_y-1) - iy;
+  const int izwav = wavefront - ixwav - iywav;
+  const int iz = dir_z==DIR_UP ? izwav : (dims_ncell_z-1) - izwav;
+
+//  int ixwav, iywav, izwav;
+//  if (dir_x==DIR_UP) { ixwav = ix; } else { ixwav = (dims_ncell_x-1) - ix; }
+//  if (dir_y==DIR_UP) { iywav = iy; } else { iywav = (dims_ncell_y-1) - iy; }
   
-  if (dir_z==DIR_UP) {
-    iz = wavefront - (ixwav + iywav); } 
-  else { 
-    iz = (dims_ncell_z-1) - (wavefront - (ixwav + iywav));
-  }
+//  if (dir_z==DIR_UP) {
+//    iz = wavefront - (ixwav + iywav); } 
+//  else { 
+//    iz = (dims_ncell_z-1) - (wavefront - (ixwav + iywav));
+//  }
 
   /*--- Bounds check ---*/
   if ((iz >= 0 && iz < dims_ncell_z) )// &&
@@ -400,7 +437,9 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       for( ia=0; ia<dims_na; ++ia )
       {
         Quantities_solve_inline(vs_local, dims, facexy, facexz, faceyz, 
-                             ix, iy, iz, ie, ia,
+                             ix, iy, iz,
+                             ix_g, iy_g, iz_g,
+                             ie, ia,
                              octant, octant_in_block, noctant_per_block);
       }
 
@@ -497,8 +536,6 @@ void Sweeper_sweep_block(
 //  acc_set_device_num( device_num, acc_device_nvidia );
 //#endif
 
-  const int nstep = 1; //FIX
-
   /*---Declarations---*/
   int wavefront = 0;
   int ix = 0;
@@ -509,9 +546,8 @@ void Sweeper_sweep_block(
   int ia = 0;
   int iu = 0;
   int octant = 0;
-  const int noctant_per_block = sweeper->noctant_per_block;
   int octant_in_block = 0;
-
+  const int noctant_per_block = sweeper->noctant_per_block; // = 8
 
 // TODO: check dims, dims_b, dims_g
   /*--- Dimensions ---*/
@@ -540,7 +576,7 @@ void Sweeper_sweep_block(
   int m_from_a_size = dims_b.nm * dims_b.na * NOCTANT;
 
   int v_size = dims.ncell_x * dims.ncell_y * dims.ncell_z * 
-    dims_b.ne * dims_b.nm * NU;
+    dims.ne * dims.nm * NU;
   int v_b_size = dims_b.ncell_x * dims_b.ncell_y * dims_b.ncell_z * 
     dims_b.ne * dims_b.nm * NU;
 
@@ -549,6 +585,11 @@ void Sweeper_sweep_block(
   const int proc_x = Env_proc_x_this( env );
   const int proc_y = Env_proc_y_this( env );
 
+  const Bool_t proc_x_min = 0 == proc_x;
+  const Bool_t proc_x_max = Env_nproc_x( env ) - 1 == proc_x;
+  const Bool_t proc_y_min = 0 == proc_y;
+  const Bool_t proc_y_max = Env_nproc_y( env ) - 1 == proc_y;
+
   StepInfoAll stepinfoall;  /*---But only use noctant_per_block values---*/
 
   for( octant_in_block=0; octant_in_block<sweeper->noctant_per_block;
@@ -556,10 +597,11 @@ void Sweeper_sweep_block(
   {
     stepinfoall.stepinfo[octant_in_block] = StepScheduler_stepinfo(
       &(sweeper->stepscheduler), step, octant_in_block, proc_x, proc_y );
-
   }
 
-  octant_in_block = 0; //FIX
+  const int nstep = StepScheduler_nstep( &(sweeper->stepscheduler) );
+  const int is_first_step = 0 == step;
+  const int is_last_step = nstep - 1 == step;
 
 # if 0
 a_from_m, m_from_a - copyin, delete to caller
@@ -572,230 +614,282 @@ make sure to say "present"
 #endif
  
   /*--- Data transfer to the GPU ---*/
-#pragma acc enter data copyin(a_from_m[:a_from_m_size], \
-                              m_from_a[:m_from_a_size], \
-                              vi[:v_size], \
-                              vo[:v_size], \
-                              dims_b), \
-                       create(facexy[:facexy_size], \
-                              facexz[:facexz_size], \
-                              faceyz[:faceyz_size])
+  if (is_first_step) {
+    #pragma acc enter data \
+      copyin(vi[:v_size]), \
+      copyin(vo[:v_size]), \
+      copyin(a_from_m[:a_from_m_size]), \
+      copyin(m_from_a[:m_from_a_size]), \
+      create(facexy[:facexy_size]), \
+      create(facexz[:facexz_size]), \
+      create(faceyz[:faceyz_size]), \
+      create(vs_local[:vs_local_size])
+  } else {
+    #pragma acc enter data \
+      copyin(facexz[:facexz_size]), \
+      copyin(faceyz[:faceyz_size])
+  }
+  #pragma acc enter data copyin(dims_b)
+  #pragma acc enter data copyin(stepinfoall)
 
-    /*---Initialize faces---*/
+  /*---Initialize faces---*/
 
-    /*---The semantics of the face arrays are as follows.
-         On entering a cell for a solve at the gridcell level,
-         the face array is assumed to have a value corresponding to
-         "one cell lower" in the relevant direction.
-         On leaving the gridcell solve, the face has been updated
-         to have the flux at that gridcell.
-         Thus, the face is initialized at first to have a value
-         "one cell" outside of the domain, e.g., for the XY face,
-         either -1 or dims.ncell_x.
-         Note also that the face initializer functions now take
-         coordinates for all three spatial dimensions --
-         the third dimension is used to denote whether it is the
-         "lower" or "upper" face and also its exact location
-         in that dimension.
-    ---*/
+  /*---The semantics of the face arrays are as follows.
+       On entering a cell for a solve at the gridcell level,
+       the face array is assumed to have a value corresponding to
+       "one cell lower" in the relevant direction.
+       On leaving the gridcell solve, the face has been updated
+       to have the flux at that gridcell.
+       Thus, the face is initialized at first to have a value
+       "one cell" outside of the domain, e.g., for the XY face,
+       either -1 or dims.ncell_x.
+       Note also that the face initializer functions now take
+       coordinates for all three spatial dimensions --
+       the third dimension is used to denote whether it is the
+       "lower" or "upper" face and also its exact location
+       in that dimension.
+  ---*/
+
+  /*---FACE XY---*/
 
 
-// TODO: conditionalize face set on whether proc on boundary, step number, etc.
+// FIX: is_active
 
-#pragma acc parallel present(facexy[:facexy_size])
-{
+  if (is_first_step) {
 
-#pragma acc loop independent gang collapse(3)
+    #pragma acc parallel present(facexy[:facexy_size], stepinfoall)
+    {
+
+      #pragma acc loop independent gang collapse(3)
       for( octant=0; octant<NOCTANT; ++octant )
       for( iy=0; iy<dims_b_ncell_y; ++iy )
       for( ix=0; ix<dims_b_ncell_x; ++ix )
-#pragma acc loop independent vector collapse(3)
+      #pragma acc loop independent vector collapse(3)
       for( ie=0; ie<dims_b_ne; ++ie )
       for( iu=0; iu<NU; ++iu )
       for( ia=0; ia<dims_b_na; ++ia )
       {
+        const int dir_z = Dir_z( octant );
+        const int iz = dir_z == DIR_UP ? -1 : dims_b_ncell_z;
 
-      const int dir_z = Dir_z( octant );
-      iz = dir_z == DIR_UP ? -1 : dims_b_ncell_z;
+        const int ix_g = ix;
+        const int iy_g = iy;
+        const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
-      /*--- Quantities_scalefactor_space_ inline ---*/
-      int scalefactor_space = Quantities_scalefactor_space_inline(ix, iy, iz);
+        /*--- Quantities_scalefactor_space_ inline ---*/
+        const int scalefactor_space
+          = Quantities_scalefactor_space_inline(ix, iy, iz_g);
 
-      /*--- ref_facexy inline ---*/
-      facexy[ia + dims_b.na      * (
-                        iu + NU           * (
-                        ie + dims_b.ne      * (
-                        ix + dims_b.ncell_x * (
-                        iy + dims_b.ncell_y * (
-                        octant + NOCTANT * (
-                        0 )))))) ]
+        /*--- ref_facexy inline ---*/
+        facexy[ia + dims_b_na      * (
+               iu + NU           * (
+               ie + dims_b_ne      * (
+               ix + dims_b_ncell_x * (
+               iy + dims_b_ncell_y * (
+               octant + NOCTANT * (
+               0 )))))) ]
 
         /*--- Quantities_init_face routine ---*/
-        = Quantities_init_face_inline(ia, ie, iu, scalefactor_space, octant);
-      }
+          = Quantities_init_face_inline(ia, ie, iu, scalefactor_space, octant);
+    } /*---for---*/
 
- } /*--- #pragma acc parallel ---*/
+    } /*--- #pragma acc parallel ---*/
 
-#pragma acc parallel present(facexz[:facexz_size])
-{
- 
-#pragma acc loop independent gang collapse(3)
-      for( octant=0; octant<NOCTANT; ++octant )
-      for( iz=0; iz<dims_b_ncell_z; ++iz )
-      for( ix=0; ix<dims_b_ncell_x; ++ix )
-#pragma acc loop independent vector collapse(3)
-      for( ie=0; ie<dims_b_ne; ++ie )
-      for( iu=0; iu<NU; ++iu )
-      for( ia=0; ia<dims_b_na; ++ia )
-      {
+  } // is_first_step
 
-        const int dir_y = Dir_y( octant );
-        iy = dir_y == DIR_UP ? -1 : dims_b_ncell_y;
+  /*---FACE XZ---*/
+
+  #pragma acc parallel present(facexz[:facexz_size], stepinfoall)
+  {
+
+    #pragma acc loop independent gang collapse(3)
+    for( octant=0; octant<NOCTANT; ++octant )
+    for( iz=0; iz<dims_b_ncell_z; ++iz )
+    for( ix=0; ix<dims_b_ncell_x; ++ix )
+    #pragma acc loop independent vector collapse(3)
+    for( ie=0; ie<dims_b_ne; ++ie )
+    for( iu=0; iu<NU; ++iu )
+    for( ia=0; ia<dims_b_na; ++ia )
+    {
+      const int dir_y = Dir_y( octant );
+      const int iy = dir_y == DIR_UP ? -1 : dims_b_ncell_y;
+
+      const int ix_g = ix;
+      const int iy_g = iy;
+      const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
+
+      if ((dir_y == DIR_UP && proc_y_min) || (dir_y == DIR_DN && proc_y_max)) {
 
         /*--- Quantities_scalefactor_space_ inline ---*/
-        int scalefactor_space = Quantities_scalefactor_space_inline(ix, iy, iz);
+        const int scalefactor_space
+          = Quantities_scalefactor_space_inline(ix, iy, iz_g);
 
         /*--- ref_facexz inline ---*/
-        facexz[ia + dims_b.na      * (
-                        iu + NU           * (
-                        ie + dims_b.ne      * (
-                        ix + dims_b.ncell_x * (
-                        iz + dims_b.ncell_z * (
-                        octant + NOCTANT * (
-                                             0 )))))) ]
+        facexz[ia + dims_b_na      * (
+               iu + NU           * (
+               ie + dims_b_ne      * (
+               ix + dims_b_ncell_x * (
+               iz + dims_b_ncell_z * (
+               octant + NOCTANT * (
+               0 )))))) ]
 
           /*--- Quantities_init_face routine ---*/
           = Quantities_init_face_inline(ia, ie, iu, scalefactor_space, octant);
-      }
 
- } /*--- #pragma acc parallel ---*/
+      } /*---if---*/
+    } /*---for---*/
 
-#pragma acc parallel present(faceyz[:faceyz_size])
-{
+  } /*--- #pragma acc parallel ---*/
 
-#pragma acc loop independent gang collapse(3)
-      for( octant=0; octant<NOCTANT; ++octant )
-      for( iz=0; iz<dims_b_ncell_z; ++iz )
-      for( iy=0; iy<dims_b_ncell_y; ++iy )
-#pragma acc loop independent vector collapse(3)
-      for( ie=0; ie<dims_b_ne; ++ie )
-      for( iu=0; iu<NU; ++iu )
-      for( ia=0; ia<dims_b_na; ++ia )
-      {
+  /*---FACE YZ---*/
 
-        const int dir_x = Dir_x( octant );
-        ix = dir_x == DIR_UP ? -1 : dims_b_ncell_x;
+  #pragma acc parallel present(faceyz[:faceyz_size], stepinfoall)
+  {
+
+    #pragma acc loop independent gang collapse(3)
+    for( octant=0; octant<NOCTANT; ++octant )
+    for( iz=0; iz<dims_b_ncell_z; ++iz )
+    for( iy=0; iy<dims_b_ncell_y; ++iy )
+    #pragma acc loop independent vector collapse(3)
+    for( ie=0; ie<dims_b_ne; ++ie )
+    for( iu=0; iu<NU; ++iu )
+    for( ia=0; ia<dims_b_na; ++ia )
+    {
+
+      const int dir_x = Dir_x( octant );
+      const int ix = dir_x == DIR_UP ? -1 : dims_b_ncell_x;
+
+      const int ix_g = ix;
+      const int iy_g = iy;
+      const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
+
+      if ((dir_x == DIR_UP && proc_x_min) || (dir_x == DIR_DN && proc_x_max)) {
 
         /*--- Quantities_scalefactor_space_ inline ---*/
-        int scalefactor_space = Quantities_scalefactor_space_inline(ix, iy, iz);
+        const int scalefactor_space
+          = Quantities_scalefactor_space_inline(ix, iy, iz_g);
 
         /*--- ref_faceyz inline ---*/
-        faceyz[ia + dims_b.na      * (
-                        iu + NU           * (
-                        ie + dims_b.ne      * (
-                        iy + dims_b.ncell_y * (
-                        iz + dims_b.ncell_z * (
-                        octant + NOCTANT * (
-                                             0 )))))) ]
+        faceyz[ia + dims_b_na      * (
+               iu + NU           * (
+               ie + dims_b_ne      * (
+               iy + dims_b_ncell_y * (
+               iz + dims_b_ncell_z * (
+               octant + NOCTANT * (
+               0 )))))) ]
 
           /*--- Quantities_init_face routine ---*/
           = Quantities_init_face_inline(ia, ie, iu, scalefactor_space, octant);
-      }
+      } /*---if---*/
+    } /*---for---*/
 
- } /*--- #pragma acc parallel ---*/
+  } /*--- #pragma acc parallel ---*/
+
 
 // TODO: conditionalize based on step info, etc.
 
-#pragma acc data present(a_from_m[:a_from_m_size], \
-                         m_from_a[:m_from_a_size], \
-                         vi[:v_size], \
-                         vo[:v_size], \
-                         facexy[:facexy_size], \
-                         facexz[:facexz_size], \
-                         faceyz[:faceyz_size], \
-                         dims_b), \
-                 create(vs_local[vs_local_size])
- {
+  #pragma acc data \
+    present(a_from_m[:a_from_m_size]), \
+    present(m_from_a[:m_from_a_size]), \
+    present(vi[:v_size]), \
+    present(vo[:v_size]), \
+    present(facexy[:facexy_size]), \
+    present(facexz[:facexz_size]), \
+    present(faceyz[:faceyz_size]), \
+    present(dims_b), \
+    present(stepinfoall), \
+    present(vs_local[:vs_local_size])
+  {
 
-/*---Loop over octants---*/
+  /*---Loop over octants---*/
   for( octant=0; octant<NOCTANT; ++octant )
   {
 
-   /*---Decode octant directions from octant number---*/
+    if (!stepinfoall.stepinfo[octant].is_active)
+      continue;
 
-   const int dir_x = Dir_x( octant );
-   const int dir_y = Dir_y( octant );
-   const int dir_z = Dir_z( octant );
+    /*---Decode octant directions from octant number---*/
 
+    const int dir_x = Dir_x( octant );
+    const int dir_y = Dir_y( octant );
+    const int dir_z = Dir_z( octant );
 
-   const int v_offset = 0; // FIX
+    const int v_offset = stepinfoall.stepinfo[octant].block_z * v_b_size;
 
+    const int octant_in_block = octant;
 
-   /*--- KBA sweep ---*/
+    /*--- KBA sweep ---*/
 
-   /*--- Number of wavefronts equals the sum of the dimension sizes
-     minus the number of dimensions minus one. In our case, we have
-     three total dimensions, so we add the sizes and subtract 2. 
-   ---*/
-   int num_wavefronts = (dims_b.ncell_z + dims_b.ncell_y + dims_b.ncell_x) - 2;
+    /*--- Number of wavefronts equals the sum of the dimension sizes
+      minus the number of dimensions minus one. In our case, we have
+      three total dimensions, so we add the sizes and subtract 2. 
+    ---*/
+    const int num_wavefronts = dims_b_ncell_z + dims_b_ncell_y + dims_b_ncell_x - 2;
  
-   /*--- Loop over wavefronts ---*/
-   for (wavefront = 0; wavefront < num_wavefronts; wavefront++)
-     {
+    /*--- Loop over wavefronts ---*/
+    for (wavefront = 0; wavefront < num_wavefronts; wavefront++)
+    {
 
-/*--- Create an asynchronous queue for each octant ---*/
-#pragma acc parallel async(octant)
-     {
+    /*--- Create an asynchronous queue for each octant ---*/
+    #pragma acc parallel async(octant)
+    {
 
-       /*---Loop over cells, in proper direction---*/
+      /*---Loop over cells, in proper direction---*/
 
-#pragma acc loop independent gang, collapse(2)
-       for( int iy_updown=0; iy_updown<dims_b_ncell_y; ++iy_updown )
-         for( int ix_updown=0; ix_updown<dims_b_ncell_x; ++ix_updown )
-           {
+      #pragma acc loop independent gang, collapse(2)
+      for( int iywav=0; iywav<dims_b_ncell_y; ++iywav )
+      for( int ixwav=0; ixwav<dims_b_ncell_x; ++ixwav )
+      {
 
-             const int iy = dir_y==DIR_UP ? iy_updown : dims_b_ncell_y - 1 - iy_updown;
-             const int ix = dir_x==DIR_UP ? ix_updown : dims_b_ncell_x - 1 - ix_updown;
+        const int ix = dir_x==DIR_UP ? ixwav : dims_b_ncell_x - 1 - ixwav;
+        const int iy = dir_y==DIR_UP ? iywav : dims_b_ncell_y - 1 - iywav;
+        const int izwav = wavefront - ixwav - iywav;
+        const int iz = dir_z==DIR_UP ? izwav : (dims_b_ncell_z-1) - izwav;
 
-             /*--- In-gridcell computations ---*/
-             Sweeper_sweep_cell_acceldir( dims_b, wavefront, octant, ix, iy,
-                                          dir_x, dir_y, dir_z,
-                                          facexy, facexz, faceyz,
-                                          a_from_m, m_from_a,
-                                          &(vi[v_offset]), &(vo[v_offset]), vs_local,
-                                          octant_in_block, noctant_per_block );
-           } /*---ix/iy---*/
+        const int ix_g = ix;
+        const int iy_g = iy;
+        const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
-     } /*--- #pragma acc parallel ---*/
+        /*--- In-gridcell computations ---*/
+        Sweeper_sweep_cell_acceldir( dims_b, wavefront, octant, ix, iy,
+                                     ix_g, iy_g, iz_g,
+                                     dir_x, dir_y, dir_z,
+                                     facexy, facexz, faceyz,
+                                     a_from_m, m_from_a,
+                                     &(vi[v_offset]), &(vo[v_offset]), vs_local,
+                                     octant_in_block, noctant_per_block );
 
-     } /*--- wavefront ---*/
+      } /*---ix/iy---*/
+
+    } /*--- #pragma acc parallel ---*/
+
+    } /*--- wavefront ---*/
 
   } /*---octant---*/
  
-}   /*--- #pragma acc enter data ---*/
+  }   /*--- #pragma acc data present ---*/
 
-#pragma acc wait
+  #pragma acc wait
 
-  if (step < nstep - 1) {   
   /*--- Data transfer of results to the host ---*/
-#pragma acc exit data copyout(vo[:v_size], \
-                              facexy[:facexy_size], \
-                              facexz[:facexz_size], \
-                              faceyz[:faceyz_size]) \
-                      delete(a_from_m[:a_from_m_size], \
-                             m_from_a[:m_from_a_size], \
-                             vi[:v_size], \
-                             vs_local[:vs_local_size])
+  if (is_last_step) {
+
+    #pragma acc exit data \
+      copyout(vo[:v_size]), \
+      delete(vi[:v_size]), \
+      delete(a_from_m[:a_from_m_size]), \
+      delete(m_from_a[:m_from_a_size]), \
+      delete(vs_local[:vs_local_size]), \
+      delete(facexy[:facexy_size]), \
+      delete(facexz[:facexz_size]), \
+      delete(faceyz[:faceyz_size])
   } else {
-#pragma acc exit data copyout(vo[:v_size]), \
-                      delete(a_from_m[:a_from_m_size], \
-                             m_from_a[:m_from_a_size], \
-                             vi[:v_size], \
-                             facexy[:facexy_size], \
-                             facexz[:facexz_size], \
-                             faceyz[:faceyz_size], \
-                             vs_local[:vs_local_size])
+    #pragma acc exit data \
+      copyout(facexz[:facexz_size]), \
+      copyout(faceyz[:faceyz_size])
   }
+  #pragma acc exit data delete(dims_b)
+  #pragma acc exit data delete(stepinfoall)
 
 } /*---sweep---*/
 
@@ -821,7 +915,7 @@ void Sweeper_sweep(
 
   initialize_state_zero( Pointer_h( vo ), sweeper->dims, NU );
 
-  const int nstep = 1; //FIX
+  const int nstep = StepScheduler_nstep( &(sweeper->stepscheduler) );
 
   int step = 0;
   for (step = 0; step < nstep; ++step) {
