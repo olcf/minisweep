@@ -450,7 +450,6 @@ void Sweeper_sweep_block_acceldir(
   int octant_in_block = 0;
   const int noctant_per_block = sweeper->noctant_per_block; // = 8
 
-// TODO: check dims, dims_b, dims_g
   /*--- Dimensions ---*/
   Dimensions dims = sweeper->dims;
   Dimensions dims_b = sweeper->dims_b;
@@ -553,9 +552,6 @@ make sure to say "present"
 
   /*---FACE XY---*/
 
-
-// FIX: is_active
-
   if (is_first_step) {
 
     #pragma acc parallel present(facexy[:facexy_size], stepinfoall)
@@ -575,7 +571,8 @@ make sure to say "present"
 
         const int ix_g = ix + dims_b_ncell_x * proc_x;
         const int iy_g = iy + dims_b_ncell_y * proc_y;
-        const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
+        const int iz_g = iz + (dir_z == DIR_UP ? 0 : dims_ncell_z - dims_b_ncell_z);
+        //const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
         /*--- Quantities_scalefactor_space_ inline ---*/
         const int scalefactor_space
@@ -686,9 +683,6 @@ make sure to say "present"
 
   } /*--- #pragma acc parallel ---*/
 
-
-// TODO: conditionalize based on step info, etc.
-
   #pragma acc data \
     present(a_from_m[:a_from_m_size]), \
     present(m_from_a[:m_from_a_size]), \
@@ -772,6 +766,8 @@ make sure to say "present"
 
   #pragma acc wait
 
+
+
   /*--- Data transfer of results to the host ---*/
   if (is_last_step) {
 
@@ -848,7 +844,7 @@ void Sweeper_create( Sweeper*          sweeper,
                      Env*              env,
                      Arguments*        args )
 {
-  sweeper->nblock_z = 1; //FIX
+  sweeper->nblock_z = 1; //NOTE: will not work efficiently in parallel.
   sweeper->noctant_per_block = NOCTANT;
   sweeper->nblock_octant     = NOCTANT / sweeper->noctant_per_block;
 

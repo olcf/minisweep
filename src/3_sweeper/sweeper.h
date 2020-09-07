@@ -27,7 +27,12 @@
   #endif
 #else
 #ifdef USE_OPENMP4
-  #define SWEEPER_OPENMP4
+  #ifdef USE_KBA
+    //TODO - make this work
+    #define SWEEPER_KBA_OPENMP4
+  #else
+    #define SWEEPER_OPENMP4
+  #endif
 #else
   #ifndef SWEEPER_SIMPLE
   #ifndef SWEEPER_TILEOCTANTS
