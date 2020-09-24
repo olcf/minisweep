@@ -499,6 +499,14 @@ void Sweeper_sweep_block_acceldir(
       &(sweeper->stepscheduler), step, octant_in_block, proc_x, proc_y );
   }
 
+  /*
+  Insist( dims_b.ncell_x * proc_x == quan->ix_base);
+  Insist( dims_b.ncell_y * proc_y == quan->iy_base);
+  */
+
+  const int ix_base = quan->ix_base;
+  const int iy_base = quan->iy_base;
+
   const int nstep = StepScheduler_nstep( &(sweeper->stepscheduler) );
   const int is_first_step = 0 == step;
   const int is_last_step = nstep - 1 == step;
@@ -569,8 +577,8 @@ make sure to say "present"
         const int dir_z = Dir_z( octant );
         const int iz = dir_z == DIR_UP ? -1 : dims_b_ncell_z;
 
-        const int ix_g = ix + dims_b_ncell_x * proc_x;
-        const int iy_g = iy + dims_b_ncell_y * proc_y;
+        const int ix_g = ix + ix_base; // dims_b_ncell_x * proc_x;
+        const int iy_g = iy + iy_base; // dims_b_ncell_y * proc_y;
         const int iz_g = iz + (dir_z == DIR_UP ? 0 : dims_ncell_z - dims_b_ncell_z);
         //const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
@@ -612,8 +620,8 @@ make sure to say "present"
       const int dir_y = Dir_y( octant );
       const int iy = dir_y == DIR_UP ? -1 : dims_b_ncell_y;
 
-      const int ix_g = ix + dims_b_ncell_x * proc_x;
-      const int iy_g = iy + dims_b_ncell_y * proc_y;
+      const int ix_g = ix + ix_base; // dims_b_ncell_x * proc_x;
+      const int iy_g = iy + iy_base; // dims_b_ncell_y * proc_y;
       const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
       if ((dir_y == DIR_UP && proc_y_min) || (dir_y == DIR_DN && proc_y_max)) {
@@ -657,8 +665,8 @@ make sure to say "present"
       const int dir_x = Dir_x( octant );
       const int ix = dir_x == DIR_UP ? -1 : dims_b_ncell_x;
 
-      const int ix_g = ix + dims_b_ncell_x * proc_x;
-      const int iy_g = iy + dims_b_ncell_y * proc_y;
+      const int ix_g = ix + ix_base; // dims_b_ncell_x * proc_x;
+      const int iy_g = iy + iy_base; // dims_b_ncell_y * proc_y;
       const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
       if ((dir_x == DIR_UP && proc_x_min) || (dir_x == DIR_DN && proc_x_max)) {
@@ -741,8 +749,8 @@ make sure to say "present"
         const int izwav = wavefront - ixwav - iywav;
         const int iz = dir_z==DIR_UP ? izwav : (dims_b_ncell_z-1) - izwav;
 
-        const int ix_g = ix + dims_b_ncell_x * proc_x;
-        const int iy_g = iy + dims_b_ncell_y * proc_y;
+        const int ix_g = ix + ix_base; // dims_b_ncell_x * proc_x;
+        const int iy_g = iy + iy_base; // dims_b_ncell_y * proc_y;
         const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
 
         /*--- In-gridcell computations ---*/
@@ -853,6 +861,9 @@ void Sweeper_create( Sweeper*          sweeper,
   sweeper->dims = dims;
   sweeper->dims_b = sweeper->dims;
   sweeper->dims_b.ncell_z = dims_b_ncell_z;
+
+  Insist( Env_nproc_x(env) == 1 );
+  Insist( Env_nproc_y(env) == 1 );
 
   StepScheduler_create( &(sweeper->stepscheduler),
                               sweeper->nblock_z, sweeper->nblock_octant, env );

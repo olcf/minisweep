@@ -2,6 +2,7 @@
 #------------------------------------------------------------------------------
 
 module load cuda
+module load gcc
 
 if [ "$COMPILER" != "" -a "$COMPILER" != "nvcc" ] ; then
   COMPILER_FLAG="-ccbin;${COMPILER};"
@@ -40,8 +41,10 @@ fi
 #------------------------------------------------------------------------------
 
 # See also `which mpcc`
-MPI_INCLUDE_DIR=/opt/ibmhpc/pecurrent/mpich/gnu/include64
-MPI_LIB=/opt/ibmhpc/pecurrent/mpich/gnu/lib64/libmpi.so
+#MPI_INCLUDE_DIR=/opt/ibmhpc/pecurrent/mpich/gnu/include64
+#MPI_LIB=/opt/ibmhpc/pecurrent/mpich/gnu/lib64/libmpi.so
+MPI_INCLUDE_DIR=${OLCF_SPECTRUM_MPI_ROOT}/include
+MPI_LIB=${OLCF_SPECTRUM_MPI_ROOT}/lib/libmpi_ibm.so
 
 cmake \
   -DCMAKE_BUILD_TYPE:STRING="$BUILD" \
@@ -55,8 +58,8 @@ cmake \
   -DMPI_C_LIBRARIES:STRING=$MPI_LIB \
  \
   -DUSE_CUDA:BOOL=ON \
-  -DCUDA_NVCC_FLAGS:STRING="${COMPILER_FLAG}${COMPILER_FLAGS_HOST}${DEBUG_FLAG}-I$MPICH_DIR/include;-gencode;arch=compute_35,code=sm_35;-O3;-use_fast_math;--maxrregcount;128;-Xptxas=-v" \
-  -DCUDA_HOST_COMPILER:STRING=/usr/bin/gcc \
+  -DCUDA_NVCC_FLAGS:STRING="${COMPILER_FLAG}${COMPILER_FLAGS_HOST}${DEBUG_FLAG}-I${MPI_INCLUDE_DIR};-gencode;arch=compute_70,code=sm_70;-O3;-use_fast_math;--maxrregcount;128;-Xptxas=-v" \
+  -DCUDA_HOST_COMPILER:STRING=$(which gcc) \
   -DCUDA_PROPAGATE_HOST_FLAGS:BOOL=ON \
  \
   -DCMAKE_EXE_LINKER_FLAGS:STRING=$MPI_LIB \

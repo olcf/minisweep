@@ -506,6 +506,58 @@ static void test_mpi_cuda( Env* env, int* ntest, int* ntest_passed )
 }
 
 /*===========================================================================*/
+/*---Tester: MPI + OPENACC---*/
+
+static void test_mpi_openacc( Env* env, int* ntest, int* ntest_passed )
+{
+#ifdef USE_KBA
+#ifdef USE_MPI
+#ifndef USE_OPENMP
+#ifdef USE_ACC
+  const Bool_t do_tests = Bool_true;
+#else
+  const Bool_t do_tests = Bool_false;
+#endif
+#else
+  const Bool_t do_tests = Bool_false;
+#endif
+#else
+  const Bool_t do_tests = Bool_false;
+#endif
+#else
+  const Bool_t do_tests = Bool_false;
+#endif
+
+  if( do_tests )
+  {
+    char string_common[] = "--ncell_x 3 --ncell_y 5 --ncell_z 6 "
+      "--ne 2 --na 5 --nblock_z 2";
+
+    int nproc_x = 0;
+    int nproc_y = 0;
+    int nthread_octant = 0;
+    int nthread_octant_key = 0;
+
+    for( nproc_x=1; nproc_x<=2; ++nproc_x )
+    {
+    for( nproc_y=1; nproc_y<=2; ++nproc_y )
+    {
+    for( nthread_octant_key=0; nthread_octant_key<=3; ++nthread_octant_key )
+    {
+      nthread_octant = 1 << nthread_octant_key;
+      char string1[] = "";
+      char string2[MAX_LINE_LEN];
+      sprintf( string2, "--nproc_x %i --nproc_y %i ",
+        nproc_x, nproc_y, nthread_octant );
+      compare_runs_helper( env, ntest, ntest_passed, string_common,
+        string1, string2 );
+    }
+    }
+    }
+  }
+}
+
+/*===========================================================================*/
 /*---Tester: Variants---*/
 
 static void test_variants( Env* env, int* ntest, int* ntest_passed )
@@ -565,9 +617,11 @@ static void tester( Env* env )
 
   test_mpi_cuda( env, &ntest, &ntest_passed );
 
+  test_mpi_openacc( env, &ntest, &ntest_passed );
+
   test_variants( env, &ntest, &ntest_passed );
 
-  if( Env_is_proc_master( env ) )
+  if( ntest && Env_is_proc_master( env ) )
   {
     printf( "TESTS %i    PASSED %i    FAILED %i\n",
             ntest, ntest_passed, ntest-ntest_passed );
