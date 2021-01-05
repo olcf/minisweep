@@ -47,4 +47,23 @@ for BUILD in Debug Release ; do
   printf -- '-%.0s' {1..79}; echo ""
   #-----
 
+  pushd build_openmp_target_$BUILD
+
+  module load xl/16.1.1-8
+  module load cuda
+
+  make VERBOSE=1
+  code=$?
+  if [ $code != 0 ] ; then
+    exit $code
+  fi
+
+  module unload xl
+  module unload cuda
+
+  popd
+
+  #-----
+  printf -- '-%.0s' {1..79}; echo ""
+  #-----
 done
