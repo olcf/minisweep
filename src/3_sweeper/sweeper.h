@@ -25,8 +25,7 @@
   #else
     #define SWEEPER_ACC
   #endif
-#else
-#ifdef USE_OPENMP4
+#elif USE_OPENMP_TARGET
   #ifdef USE_KBA
     //TODO - make this work
     #define SWEEPER_KBA_OPENMP4
@@ -56,15 +55,18 @@
 
 #ifdef SWEEPER_KBA_ACC
   #include "sweeper_kba.h"
-  #include "sweeper_acc.h"
+  //#include "sweeper_acc.h"
+  #include "sweeper_gpu.h"
 #endif
 
 #ifdef SWEEPER_ACC
-  #include "sweeper_acc.h"
+  //#include "sweeper_acc.h"
+  #include "sweeper_gpu.h"
 #endif
 
 #ifdef SWEEPER_OPENMP4
-  #include "sweeper_openmp4.h"
+  //#include "sweeper_openmp4.h"
+  #include "sweeper_gpu.h"
 #endif
 
 #endif /*---_sweep_h_---*/

@@ -1,15 +1,15 @@
 /*---------------------------------------------------------------------------*/
 /*!
- * \file   sweeper_acc.h
- * \author Robert Searles, Wayne Joubert
+ * \file   sweeper_gpu.h
+ * \author Robert Searles, Wayne Joubert, Veronica G. Melesse Vergara
  * \date   Wed Apr 11 9:12:00 EST 2018
- * \brief  Definitions for performing a sweep, OpenACC/KBA version.
+ * \brief  Definitions for performing a sweep, OpenACC|OpenMP/KBA version.
  * \note   Copyright (C) 2018 Oak Ridge National Laboratory, UT-Battelle, LLC.
  */
 /*---------------------------------------------------------------------------*/
 
-#ifndef _sweeper_acc_h_
-#define _sweeper_acc_h_
+#ifndef _sweeper_gpu_h_
+#define _sweeper_gpu_h_
 
 #include "env.h"
 #include "definitions.h"
@@ -116,6 +116,6 @@ void Sweeper_sweep_block(
 } /*---extern "C"---*/
 #endif
 
-#endif /*---_sweeper_acc_h_---*/
+#endif /*---_sweeper_gpu_h_---*/
 
 /*---------------------------------------------------------------------------*/

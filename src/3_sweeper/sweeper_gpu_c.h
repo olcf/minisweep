@@ -1,15 +1,15 @@
 /*---------------------------------------------------------------------------*/
 /*!
- * \file   sweeper_acc_c.h
- * \author Robert Searles, Wayne Joubert
+ * \file   sweeper_gpu_c.h
+ * \author Robert Searles, Wayne Joubert, Veronica G. Melesse Vergara
  * \date   Wed Apr 11 9:12:00 EST 2018
- * \brief  Definitions for performing a sweep, OpenACC/KBA version.
+ * \brief  Definitions for performing a sweep, OpenACC|OpenMP/KBA version.
  * \note   Copyright (C) 2018 Oak Ridge National Laboratory, UT-Battelle, LLC.
  */
 /*---------------------------------------------------------------------------*/
 
-#ifndef _sweeper_acc_c_h_
-#define _sweeper_acc_c_h_
+#ifndef _sweeper_gpu_c_h_
+#define _sweeper_gpu_c_h_
 
 #include "env.h"
 #include "definitions.h"
@@ -17,11 +17,7 @@
 #include "quantities.h"
 #include "array_accessors.h"
 #include "array_operations.h"
-#include "sweeper_acc.h"
-
-//#ifdef USE_MPI
-//#include "openacc.h"
-//#endif
+#include "sweeper_gpu.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -30,8 +26,11 @@ extern "C"
 
 /*===========================================================================*/
 /*---Quantities_init_face inline routine---*/
-
+#ifdef USE_OPENMP_TARGET
+#pragma omp declare target
+#elif USE_ACC
 #pragma acc routine seq
+#endif
 P Quantities_init_face_acceldir(int ia, int ie, int iu, int scalefactor_space, int octant)
 {
   /*--- Quantities_affinefunction_ inline ---*/
@@ -53,11 +52,18 @@ P Quantities_init_face_acceldir(int ia, int ie, int iu, int scalefactor_space, i
     * ( (P) 1 + octant);
 
 }
+#ifdef USE_OPENMP_TARGET
+#pragma omp end declare target
+#endif
 
 /*===========================================================================*/
 /*---Quantities_scalefactor_space_ inline routine---*/
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp declare target
+#elif USE_ACC
 #pragma acc routine seq
+#endif
 int Quantities_scalefactor_space_acceldir(int ix_g, int iy_g, int iz_g)
 {
   int result = 0;
@@ -78,10 +84,17 @@ int Quantities_scalefactor_space_acceldir(int ix_g, int iy_g, int iz_g)
 
   return result;
 }
+#ifdef USE_OPENMP_TARGET
+#pragma omp end declare target
+#endif
 
 /*===========================================================================*/
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp declare target
+#elif USE_ACC
 #pragma acc routine seq
+#endif
 void Quantities_solve_acceldir(P* vs_local, Dimensions dims, P* facexy, P* facexz, P* faceyz,
                              int ix, int iy, int iz,
                              int ix_g, int iy_g, int iz_g,
@@ -118,7 +131,11 @@ void Quantities_solve_acceldir(P* vs_local, Dimensions dims, P* facexy, P* facex
   const P scalefactor_space_z_r = ((P)1) /
     Quantities_scalefactor_space_acceldir( ix_g, iy_g, iz_g - dir_z );
 
+#ifdef USE_OPENMP_TARGET
+// no equivalent
+#elif USE_ACC
 #pragma acc loop seq
+#endif
   for( iu=0; iu<NU; ++iu )
     {
 
@@ -208,11 +225,18 @@ void Quantities_solve_acceldir(P* vs_local, Dimensions dims, P* facexy, P* facex
 
     } /*---for---*/
 }
+#ifdef USE_OPENMP_TARGET
+#pragma omp end declare target
+#endif
 
 /*===========================================================================*/
 /*---In-gricell computations---*/
 
+#ifdef USE_OPENMP_TARGET
+// no equivalent
+#elif USE_ACC
 #pragma acc routine vector
+#endif
 void Sweeper_sweep_cell_acceldir( Dimensions dims,
                                   int wavefront,
                                   int octant,
@@ -278,7 +302,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
     {
 
    /*---Loop over energy groups---*/
+#ifdef USE_OPENMP_TARGET
+#pragma omp target teams distribute parallel for simd collapse(3)
+#elif USE_ACC
 #pragma acc loop independent vector, collapse(3)
+#endif
       for( ie=0; ie<dims_ne; ++ie )
       {
 
@@ -298,7 +326,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       { 
         // reset reduction
         P result = (P)0;
+#ifdef USE_OPENMP_TARGET
+// no equivalent
+#elif USE_ACC
 #pragma acc loop seq
+#endif
         for( im=0; im < dims_nm; ++im )
         {
           /*--- const_ref_a_from_m inline ---*/
@@ -333,7 +365,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       /*--------------------*/
 
    /*---Loop over energy groups---*/
+#ifdef USE_OPENMP_TARGET
+#pragma omp target teams distribute parallel for simd collapse(2)
+#elif USE_ACC
 #pragma acc loop independent vector, collapse(2)
+#endif
       for( ie=0; ie<dims_ne; ++ie )
       for( ia=0; ia<dims_na; ++ia )
       {
@@ -353,7 +389,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       ---*/
 
    /*---Loop over energy groups---*/
+#ifdef USE_OPENMP_TARGET
+#pragma omp target teams distribute parallel for simd collapse(3)
+#elif USE_ACC
 #pragma acc loop independent vector, collapse(3)
+#endif
       for( ie=0; ie<dims_ne; ++ie )
       {
 
@@ -361,7 +401,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       for( im=0; im<dims_nm; ++im )
       {
         P result = (P)0;
+#ifdef USE_OPENMP_TARGET
+// no equivalent
+#elif
 #pragma acc loop seq
+#endif
         for( ia=0; ia<dims_na; ++ia )
         {
          /*--- const_ref_m_from_a ---*/
@@ -381,7 +425,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
         }
 
         /*--- ref_state inline ---*/
+#ifdef USE_OPENMP_TARGET
+#pragma omp atomic update
+#elif USE_ACC
 #pragma acc atomic update
+#endif
         vo[im + dims.nm      * (
            iu + NU           * (
            ix + dims.ncell_x * (
@@ -426,16 +474,25 @@ void Sweeper_sweep_block_acceldir(
   Assert( env );
 
   /*--- Set OpenACC device based on MPI rank ---*/
-//#ifdef USE_MPI
-//  //int num_devices = acc_get_num_devices(acc_device_default);
-//  int num_devices = acc_get_num_devices(acc_device_nvidia);
-//  int mpi_rank;
-//  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-//  int device_num = mpi_rank % num_devices;
-//  printf("%d: num_devices = %d, device_num = %d\n",mpi_rank,num_devices,device_num);
-//  //acc_set_device_num( device_num, acc_device_default );
-//  acc_set_device_num( device_num, acc_device_nvidia );
-//#endif
+#ifdef USE_MPI
+#ifdef USE_OPENMP_TARGET
+  int num_devices = omp_get_num_devices();
+#elif USE_ACC
+  int num_devices = acc_get_num_devices(acc_device_default);
+  //int num_devices = acc_get_num_devices(acc_device_nvidia);
+#endif
+
+  int mpi_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  int device_num = mpi_rank % num_devices;
+  printf("%d: num_devices = %d, device_num = %d\n",mpi_rank,num_devices,device_num);
+
+#ifdef USE_OPENMP_TARGET
+  omp_set_default_device( device_num );
+#elif USE_ACC
+  acc_set_device_num( device_num, acc_device_default );
+  //acc_set_device_num( device_num, acc_device_nvidia );
+#endif
 
   /*---Declarations---*/
   int wavefront = 0;
@@ -511,18 +568,20 @@ void Sweeper_sweep_block_acceldir(
   const int is_first_step = 0 == step;
   const int is_last_step = nstep - 1 == step;
 
-# if 0
-a_from_m, m_from_a - copyin, delete to caller
-vi, vo (global) - initialize on device in caller
-vo (global) - copyout at end in caller
-vi_b, vo_b - reference as global ptr + int offset, loop ovr only part.
-  suggest don't form variables "vi_b", "vo_b"
-make sure to say "present"
-
-#endif
- 
   /*--- Data transfer to the GPU ---*/
   if (is_first_step) {
+
+#ifdef USE_OPENMP_TARGET
+#pragma omp target enter data \
+  map(to: vi[:v_size], \
+          vo[:v_size], \
+          a_from_m[:a_from_m_size], \
+          m_from_a[:m_from_a_size]), \
+  map(alloc: facexy[:facexy_size], \
+             facexz[:facexz_size], \
+             faceyz[:faceyz_size], \
+             vs_local[:vs_local_size])
+#elif USE_ACC
     #pragma acc enter data \
       copyin(vi[:v_size]), \
       copyin(vo[:v_size]), \
@@ -532,13 +591,26 @@ make sure to say "present"
       create(facexz[:facexz_size]), \
       create(faceyz[:faceyz_size]), \
       create(vs_local[:vs_local_size])
+#endif
   } else {
+#ifdef USE_OPENMP_TARGET
+#pragma omp target enter data \
+  map(to: facexz[:facexz_size], \
+          faceyz[:faceyz_size])
+#elif USE_ACC
     #pragma acc enter data \
       copyin(facexz[:facexz_size]), \
       copyin(faceyz[:faceyz_size])
+#endif
   }
+
+#ifdef USE_OPENMP_TARGET
+#pragma omp target enter data \
+  map(to: dims_b, stepinfoall)
+#elif USE_ACC
   #pragma acc enter data copyin(dims_b)
   #pragma acc enter data copyin(stepinfoall)
+#endif
 
   /*---Initialize faces---*/
 
@@ -562,14 +634,26 @@ make sure to say "present"
 
   if (is_first_step) {
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp target update from(facexy[:facexy_size], stepinfoall)
+#elif USE_ACC
     #pragma acc parallel present(facexy[:facexy_size], stepinfoall)
+#endif
     {
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp target teams distribute collapse(3)
+#elif USE_ACC
       #pragma acc loop independent gang collapse(3)
+#endif
       for( octant=0; octant<NOCTANT; ++octant )
       for( iy=0; iy<dims_b_ncell_y; ++iy )
       for( ix=0; ix<dims_b_ncell_x; ++ix )
+#ifdef USE_OPENMP_TARGET
+#pragma omp parallel for collapse(3)
+#elif USE_ACC
       #pragma acc loop independent vector collapse(3)
+#endif
       for( ie=0; ie<dims_b_ne; ++ie )
       for( iu=0; iu<NU; ++iu )
       for( ia=0; ia<dims_b_na; ++ia )
@@ -605,14 +689,27 @@ make sure to say "present"
 
   /*---FACE XZ---*/
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp target update from(facexz[:facexz_size], stepinfoall)
+#elif USE_ACC
   #pragma acc parallel present(facexz[:facexz_size], stepinfoall)
+#endif
   {
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp target teams distribute collapse(3)
+#elif USE_ACC
     #pragma acc loop independent gang collapse(3)
+#endif
     for( octant=0; octant<NOCTANT; ++octant )
     for( iz=0; iz<dims_b_ncell_z; ++iz )
     for( ix=0; ix<dims_b_ncell_x; ++ix )
+#ifdef USE_OPENMP_TARGET
+// review this pragma
+#pragma omp parallel for collapse(3)
+#elif USE_ACC
     #pragma acc loop independent vector collapse(3)
+#endif
     for( ie=0; ie<dims_b_ne; ++ie )
     for( iu=0; iu<NU; ++iu )
     for( ia=0; ia<dims_b_na; ++ia )
@@ -648,15 +745,27 @@ make sure to say "present"
   } /*--- #pragma acc parallel ---*/
 
   /*---FACE YZ---*/
-
+#ifdef USE_OPENMP_TARGET
+#pragma omp target update from(faceyz[:faceyz_size], stepinfoall)
+#elif USE_ACC
   #pragma acc parallel present(faceyz[:faceyz_size], stepinfoall)
+#endif
   {
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp target teams distribute collapse(3)
+#elif USE_ACC
     #pragma acc loop independent gang collapse(3)
+#endif
     for( octant=0; octant<NOCTANT; ++octant )
     for( iz=0; iz<dims_b_ncell_z; ++iz )
     for( iy=0; iy<dims_b_ncell_y; ++iy )
+#ifdef USE_OPENMP_TARGET
+// review this pragma
+#pragma omp parallel for collapse(3)
+#elif USE_ACC
     #pragma acc loop independent vector collapse(3)
+#endif
     for( ie=0; ie<dims_b_ne; ++ie )
     for( iu=0; iu<NU; ++iu )
     for( ia=0; ia<dims_b_na; ++ia )
@@ -691,6 +800,17 @@ make sure to say "present"
 
   } /*--- #pragma acc parallel ---*/
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp target update from(a_from_m[:a_from_m_size], \
+                               m_from_a[:m_from_a_size], \
+                               vi[:v_size], \
+                               vo[:v_size], \
+                               facexy[:facexy_size], \
+                               facexz[:facexz_size], \
+                               faceyz[:faceyz_size], \
+                               dims_b, stepinfoall, \
+                               vs_local[:vs_local_size])
+#elif USE_ACC
   #pragma acc data \
     present(a_from_m[:a_from_m_size]), \
     present(m_from_a[:m_from_a_size]), \
@@ -702,6 +822,7 @@ make sure to say "present"
     present(dims_b), \
     present(stepinfoall), \
     present(vs_local[:vs_local_size])
+#endif
   {
 
   /*---Loop over octants---*/
@@ -734,12 +855,21 @@ make sure to say "present"
     {
 
     /*--- Create an asynchronous queue for each octant ---*/
+#ifdef USE_OPENMP_TARGET
+/* FIX: possibly CPU threads here? or CPU tasks? ? parallel nowait ?*/
+#pragma omp target nowait depend(out:octant)
+#elif USE_ACC
     #pragma acc parallel async(octant)
+#endif
     {
 
       /*---Loop over cells, in proper direction---*/
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp target teams distribute parallel for collapse(2)
+#elif USE_ACC
       #pragma acc loop independent gang, collapse(2)
+#endif
       for( int iywav=0; iywav<dims_b_ncell_y; ++iywav )
       for( int ixwav=0; ixwav<dims_b_ncell_x; ++ixwav )
       {
@@ -772,13 +902,27 @@ make sure to say "present"
  
   }   /*--- #pragma acc data present ---*/
 
+#ifdef USE_OPENMP_TARGET
+#pragma omp taskwait
+#elif USE_ACC
   #pragma acc wait
+#endif
 
 
 
   /*--- Data transfer of results to the host ---*/
   if (is_last_step) {
-
+#ifdef USE_OPENMP_TARGET
+#pragma omp target exit data \
+  map(from: vo[:v_size]), \
+  map(delete: vi[:v_size], \
+              a_from_m[:a_from_m_size], \
+              m_from_a[:m_from_a_size], \
+              vs_local[:vs_local_size], \
+              facexy[:facexy_size], \
+              facexz[:facexz_size], \
+              faceyz[:faceyz_size])
+#elif USE_ACC
     #pragma acc exit data \
       copyout(vo[:v_size]), \
       delete(vi[:v_size]), \
@@ -788,13 +932,25 @@ make sure to say "present"
       delete(facexy[:facexy_size]), \
       delete(facexz[:facexz_size]), \
       delete(faceyz[:faceyz_size])
+#endif
   } else {
+#ifdef USE_OPENMP_TARGET
+#pragma omp target exit data \
+  map(from: facexz[:facexz_size], \
+            faceyz[:faceyz_size])
+#elif USE_ACC
     #pragma acc exit data \
       copyout(facexz[:facexz_size]), \
       copyout(faceyz[:faceyz_size])
+#endif
   }
+#ifdef USE_OPENMP_TARGET
+#pragma omp target exit data \
+  map(delete: dims_b, stepinfoall)
+#elif USE_ACC
   #pragma acc exit data delete(dims_b)
   #pragma acc exit data delete(stepinfoall)
+#endif
 
 } /*---sweep---*/
 
@@ -960,6 +1116,6 @@ void Sweeper_sweep(
 } /*---extern "C"---*/
 #endif
 
-#endif /*---_sweeper_acc_c_h_---*/
+#endif /*---_sweeper_gpu_c_h_---*/
 
 /*---------------------------------------------------------------------------*/
