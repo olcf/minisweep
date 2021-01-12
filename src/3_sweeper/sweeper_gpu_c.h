@@ -431,7 +431,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 
         /*--- ref_state inline ---*/
 #ifdef USE_OPENMP_TARGET
-#pragma omp atomic update
+//#pragma omp atomic update
 #elif USE_ACC
 #pragma acc atomic update
 #endif
@@ -497,6 +497,7 @@ void Sweeper_sweep_block_acceldir(
 #elif USE_ACC
   acc_set_device_num( device_num, acc_device_default );
   //acc_set_device_num( device_num, acc_device_nvidia );
+#endif
 #endif
 
   /*---Declarations---*/
@@ -871,7 +872,7 @@ void Sweeper_sweep_block_acceldir(
       /*---Loop over cells, in proper direction---*/
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for collapse(2)
+#pragma omp teams distribute parallel for collapse(2)
 #elif USE_ACC
       #pragma acc loop independent gang, collapse(2)
 #endif

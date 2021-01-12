@@ -26,6 +26,7 @@ extern "C"
 #endif
 
 #ifndef SWEEPER_KBA_ACC
+#ifndef SWEEPER_KBA_OPENMP_TARGET
 
 /*===========================================================================*/
 /*---Struct with pointers etc. used to perform sweep---*/
@@ -91,6 +92,7 @@ void Sweeper_sweep(
 
 /*===========================================================================*/
 
+#endif /*---SWEEPER_KBA_OPENMP_TARGET---*/
 #endif /*---SWEEPER_KBA_ACC---*/
 
 /*===========================================================================*/
