@@ -338,6 +338,7 @@ void Sweeper_destroy( Sweeper* sweeper,
 }
 
 #ifndef SWEEPER_KBA_ACC
+#ifndef SWEEPER_KBA_OPENMP_TARGET
 
 /*===========================================================================*/
 /*---Extract SweeperLite from Sweeper---*/
@@ -593,6 +594,7 @@ void Sweeper_sweep_block(
                                env);
 }
 
+#endif /*---SWEEPER_KBA_OPENMP_TARGET---*/
 #endif /*---SWEEPER_KBA_ACC---*/
 
 /*===========================================================================*/
