@@ -28,9 +28,9 @@
 #elif USE_OPENMP_TARGET
   #ifdef USE_KBA
     //TODO - make this work
-    #define SWEEPER_KBA_OPENMP4
+    #define SWEEPER_KBA_OPENMP_TARGET
   #else
-    #define SWEEPER_OPENMP4
+    #define SWEEPER_OPENMP_TARGET
   #endif
 #else
   #ifndef SWEEPER_SIMPLE
