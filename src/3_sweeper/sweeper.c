@@ -23,16 +23,19 @@
 #endif
 
 #ifdef SWEEPER_KBA_ACC
-  #include "sweeper_acc_c.h"
+  //#include "sweeper_acc_c.h"
+  #include "sweeper_gpu_c.h"
   #include "sweeper_kba_c.h"
 #endif
 
 #ifdef SWEEPER_ACC
-#include "sweeper_acc_c.h"
+//#include "sweeper_acc_c.h"
+#include "sweeper_gpu_c.h"
 #endif
 
-#ifdef SWEEPER_OPENMP4
-#include "sweeper_openmp4_c.h"
+#ifdef SWEEPER_OPENMP_TARGET
+//#include "sweeper_openmp4_c.h"
+#include "sweeper_gpu_c.h"
 #endif
 
 /*---------------------------------------------------------------------------*/

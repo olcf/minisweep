@@ -39,7 +39,6 @@
   #endif
   #endif
 #endif
-#endif
 
 #ifdef SWEEPER_SIMPLE
   #include "sweeper_simple.h"
