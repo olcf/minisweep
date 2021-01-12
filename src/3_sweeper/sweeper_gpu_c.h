@@ -993,6 +993,7 @@ void Sweeper_sweep_block(
 /*===========================================================================*/
 
 #ifndef SWEEPER_KBA_ACC
+#ifndef SWEEPER_KBA_OPENMP_TARGET
 
 /*===========================================================================*/
 /*---Null object---*/
@@ -1115,6 +1116,7 @@ void Sweeper_sweep(
 
 /*===========================================================================*/
 
+#endif /*---SWEEPER_KBA_OPENMP_TARGET---*/
 #endif /*---SWEEPER_KBA_ACC---*/
 
 #ifdef __cplusplus
