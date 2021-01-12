@@ -19,6 +19,11 @@
 #include "array_operations.h"
 #include "sweeper_gpu.h"
 
+#ifdef USE_ACC
+#include "openacc.h"
+#endif
+
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -403,7 +408,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
         P result = (P)0;
 #ifdef USE_OPENMP_TARGET
 // no equivalent
-#elif
+#elif USE_ACC
 #pragma acc loop seq
 #endif
         for( ia=0; ia<dims_na; ++ia )

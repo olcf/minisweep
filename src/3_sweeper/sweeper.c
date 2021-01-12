@@ -28,6 +28,11 @@
   #include "sweeper_kba_c.h"
 #endif
 
+#ifdef SWEEPER_KBA_OPENMP_TARGET
+  #include "sweeper_gpu_c.h"
+  #include "sweeper_kba_c.h"
+#endif
+
 #ifdef SWEEPER_ACC
 //#include "sweeper_acc_c.h"
 #include "sweeper_gpu_c.h"

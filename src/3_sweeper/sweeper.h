@@ -58,12 +58,17 @@
   #include "sweeper_gpu.h"
 #endif
 
+#ifdef SWEEPER_KBA_OPENMP_TARGET
+  #include "sweeper_kba.h"
+  #include "sweeper_gpu.h"
+#endif
+
 #ifdef SWEEPER_ACC
   //#include "sweeper_acc.h"
   #include "sweeper_gpu.h"
 #endif
 
-#ifdef SWEEPER_OPENMP4
+#ifdef SWEEPER_OPENMP_TARGET
   //#include "sweeper_openmp4.h"
   #include "sweeper_gpu.h"
 #endif
