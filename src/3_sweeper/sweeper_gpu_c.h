@@ -308,7 +308,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for simd collapse(3)
+#pragma omp target teams distribute parallel for simd collapse(3) map(to:dims_ne,dims_na,a_from_m,vi,vs_local)
 #elif USE_ACC
 #pragma acc loop independent vector, collapse(3)
 #endif
@@ -331,7 +331,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       { 
         // reset reduction
         P result = (P)0;
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 // no equivalent
 #elif USE_ACC
 #pragma acc loop seq
@@ -371,7 +371,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for simd collapse(2)
+#pragma omp target teams distribute parallel for simd collapse(2) map(to:dims_ne,dims_na,vs_local,dims,facexy,facexz,faceyz,ix,iy,iz,ix_g,iy_g,iz_g,ie,ia,octant,octant_in_block,noctant_per_block)
 #elif USE_ACC
 #pragma acc loop independent vector, collapse(2)
 #endif
@@ -395,7 +395,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for simd collapse(3)
+#pragma omp target teams distribute parallel for simd collapse(3) map(to:m_from_a,vs_local,vo)
 #elif USE_ACC
 #pragma acc loop independent vector, collapse(3)
 #endif
@@ -577,7 +577,7 @@ void Sweeper_sweep_block_acceldir(
   /*--- Data transfer to the GPU ---*/
   if (is_first_step) {
 
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 #pragma omp target enter data \
   map(to: vi[0:v_size], \
           vo[0:v_size], \
@@ -599,7 +599,7 @@ void Sweeper_sweep_block_acceldir(
       create(vs_local[:vs_local_size])
 #endif
   } else {
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 #pragma omp target enter data \
   map(to: facexz[0:facexz_size], \
           faceyz[0:faceyz_size])
@@ -610,7 +610,7 @@ void Sweeper_sweep_block_acceldir(
 #endif
   }
 
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 #pragma omp target data \
   map(to: dims_b, stepinfoall)
 #elif USE_ACC
@@ -641,14 +641,14 @@ void Sweeper_sweep_block_acceldir(
   if (is_first_step) {
 
 #ifdef USE_OPENMP_TARGET
-//#pragma omp target update from(facexy[:facexy_size], stepinfoall)
+#pragma omp target update from(facexy[0:facexy_size], stepinfoall)
 #elif USE_ACC
     #pragma acc parallel present(facexy[:facexy_size], stepinfoall)
 #endif
     {
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute collapse(3)
+#pragma omp target teams distribute collapse(3) map(to:facexy)
 #elif USE_ACC
       #pragma acc loop independent gang collapse(3)
 #endif
@@ -696,14 +696,14 @@ void Sweeper_sweep_block_acceldir(
   /*---FACE XZ---*/
 
 #ifdef USE_OPENMP_TARGET
-//#pragma omp target update from(facexz[:facexz_size], stepinfoall)
+#pragma omp target update from(facexz[0:facexz_size], stepinfoall)
 #elif USE_ACC
   #pragma acc parallel present(facexz[:facexz_size], stepinfoall)
 #endif
   {
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute collapse(3)
+#pragma omp target teams distribute collapse(3) map(to:facexz)
 #elif USE_ACC
     #pragma acc loop independent gang collapse(3)
 #endif
@@ -752,14 +752,14 @@ void Sweeper_sweep_block_acceldir(
 
   /*---FACE YZ---*/
 #ifdef USE_OPENMP_TARGET
-//#pragma omp target update from(faceyz[:faceyz_size], stepinfoall)
+#pragma omp target update from(faceyz[0:faceyz_size], stepinfoall)
 #elif USE_ACC
   #pragma acc parallel present(faceyz[:faceyz_size], stepinfoall)
 #endif
   {
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute collapse(3)
+#pragma omp target teams distribute collapse(3) map(to:faceyz)
 #elif USE_ACC
     #pragma acc loop independent gang collapse(3)
 #endif
@@ -806,7 +806,7 @@ void Sweeper_sweep_block_acceldir(
 
   } /*--- #pragma acc parallel ---*/
 
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 #pragma omp target update from(a_from_m[0:a_from_m_size], \
                                m_from_a[0:m_from_a_size], \
                                vi[0:v_size], \
@@ -861,7 +861,7 @@ void Sweeper_sweep_block_acceldir(
     {
 
     /*--- Create an asynchronous queue for each octant ---*/
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 /* FIX: possibly CPU threads here? or CPU tasks? ? parallel nowait ?*/
 //#pragma omp target nowait depend(out:octant)
 #elif USE_ACC
@@ -872,7 +872,7 @@ void Sweeper_sweep_block_acceldir(
       /*---Loop over cells, in proper direction---*/
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for collapse(2)
+//#pragma omp target teams distribute parallel for collapse(2)
 #elif USE_ACC
       #pragma acc loop independent gang, collapse(2)
 #endif
@@ -908,7 +908,7 @@ void Sweeper_sweep_block_acceldir(
  
   }   /*--- #pragma acc data present ---*/
 
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 #pragma omp taskwait
 #elif USE_ACC
   #pragma acc wait
@@ -918,7 +918,7 @@ void Sweeper_sweep_block_acceldir(
 
   /*--- Data transfer of results to the host ---*/
   if (is_last_step) {
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 #pragma omp target exit data \
   map(from: vo[0:v_size]), \
   map(delete: vi[0:v_size], \
@@ -940,7 +940,7 @@ void Sweeper_sweep_block_acceldir(
       delete(faceyz[:faceyz_size])
 #endif
   } else {
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 #pragma omp target exit data \
   map(from: facexz[0:facexz_size], \
             faceyz[0:faceyz_size])
@@ -950,7 +950,7 @@ void Sweeper_sweep_block_acceldir(
       copyout(faceyz[:faceyz_size])
 #endif
   }
-#ifdef USE_OPENMP_TARGET
+#ifdef SOMETHING_ELSE_TARGET
 //#pragma omp target data map(delete: dims_b, stepinfoall)
 #elif USE_ACC
   #pragma acc exit data delete(dims_b)
