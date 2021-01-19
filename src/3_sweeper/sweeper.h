@@ -19,6 +19,16 @@
 /* #endif */
 /* #endif */
 
+#ifdef USE_SPEC
+#ifdef SPEC_OPENACC
+  #define USE_ACC
+#else
+#ifdef SPEC_OPENMP_TARGET
+  #define USE_OPENMP_TARGET
+#endif
+#endif
+#endif
+
 #ifdef USE_ACC
   #ifdef USE_KBA
     #define SWEEPER_KBA_ACC
@@ -54,7 +64,6 @@
 
 #ifdef SWEEPER_KBA_ACC
   #include "sweeper_kba.h"
-  //#include "sweeper_acc.h"
   #include "sweeper_gpu.h"
 #endif
 
@@ -64,12 +73,10 @@
 #endif
 
 #ifdef SWEEPER_ACC
-  //#include "sweeper_acc.h"
   #include "sweeper_gpu.h"
 #endif
 
 #ifdef SWEEPER_OPENMP_TARGET
-  //#include "sweeper_openmp4.h"
   #include "sweeper_gpu.h"
 #endif
 

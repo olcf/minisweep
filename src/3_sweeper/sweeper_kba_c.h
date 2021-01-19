@@ -21,7 +21,7 @@
 #include "stepscheduler_kba.h"
 #include "sweeper_kba.h"
 #ifdef USE_ACC
-#include "sweeper_acc.h"
+#include "sweeper_gpu.h"
 #endif
 
 #include "sweeper_kba_kernels.h"

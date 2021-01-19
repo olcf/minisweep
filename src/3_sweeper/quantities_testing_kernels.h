@@ -407,7 +407,9 @@ TARGET_HD static inline void Quantities_solve(
     const P scalefactor_space_z_r = ((P)1) /
        Quantities_scalefactor_space_( quan, ix_g, iy_g, iz_g-Dir_inc(dir_z) );
 
+#ifndef USE_SPEC
 #pragma unroll
+#endif
     for( iu=0; iu<NU; ++iu )
     {
       P* const __restrict__ vslocal_this
