@@ -1,9 +1,12 @@
 #!/bin/bash
-#-----------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
 module load cmake
 
 export SOURCE=$PWD
+if [ -d ./minisweep ] ; then
+  export SOURCE=$PWD/minisweep
+fi
 export INSTALL=$PWD/install
 export NM_VALUE=16
 #export NM_VALUE=1
@@ -24,7 +27,7 @@ for BUILD in Debug Release ; do
 
   #. ../minisweep/scripts/cmake_openacc.sh
   #. ../minisweep/scripts/cmake_kba_openacc.sh
-  . ../scripts/cmake_kba_smpi_openacc.sh
+  . $SOURCE/scripts/cmake_kba_smpi_openacc.sh
 
   module unload pgi
 
@@ -43,7 +46,7 @@ for BUILD in Debug Release ; do
   #. ../minisweep/scripts/cmake_openacc.sh
   #. ../minisweep/scripts/cmake_kba_openacc.sh
   #. ../minisweep/scripts/cmake_kba_smpi_openacc.sh
-  . ../scripts/cmake_ibm_power_mpi_cuda.sh
+  . $SOURCE/scripts/cmake_ibm_power_mpi_cuda.sh
 
   module unload gcc
   module unload cuda
@@ -60,7 +63,7 @@ for BUILD in Debug Release ; do
   module load xl/16.1.1-8
   module load cuda
 
-  . ../scripts/cmake_kba_smpi_openmp_target.sh
+  . $SOURCE/scripts/cmake_kba_smpi_openmp_target.sh
 
   module unload xl
   module unload cuda
@@ -73,3 +76,4 @@ for BUILD in Debug Release ; do
 
 done
 
+#------------------------------------------------------------------------------

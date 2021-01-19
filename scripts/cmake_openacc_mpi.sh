@@ -33,7 +33,7 @@ cmake \
  \
   -DCMAKE_C_COMPILER:STRING=pgcc \
 \
-  -DCMAKE_C_FLAGS:STRING="-O3 -DNM_VALUE=$NM_VALUE $ALG_OPTIONS -DUSE_ACC -I$MPI_INCLUDE_DIR -acc -Minfo=accel -Msafeptr -ta=tesla,cc70,cc60" \
+  -DCMAKE_C_FLAGS:STRING="-O3 -DNM_VALUE=$NM_VALUE $ALG_OPTIONS -DUSE_ACC -I$MPI_INCLUDE_DIR -acc -Minfo=accel -Msafeptr -ta=tesla:pinned,cc70,cc60" \
   -DCMAKE_C_FLAGS_DEBUG:STRING="-g" \
   -DCMAKE_C_FLAGS_RELEASE:STRING="" \
 \
