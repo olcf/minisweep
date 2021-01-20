@@ -19,6 +19,11 @@ printf -- '-%.0s' {1..79}; echo ""
 
 for BUILD in Debug Release ; do
 
+  #--------------------
+  #--- PGI/OpenACC
+  #--------------------
+
+  rm -rf build_openacc_$BUILD
   mkdir -p build_openacc_$BUILD
   pushd build_openacc_$BUILD
 
@@ -37,6 +42,11 @@ for BUILD in Debug Release ; do
   printf -- '-%.0s' {1..79}; echo ""
   #-----
 
+  #--------------------
+  #--- GCC/CUDA
+  #--------------------
+
+  rm -rf build_cuda_$BUILD
   mkdir -p build_cuda_$BUILD
   pushd build_cuda_$BUILD
 
@@ -57,6 +67,11 @@ for BUILD in Debug Release ; do
   printf -- '-%.0s' {1..79}; echo ""
   #-----
 
+  #--------------------
+  #--- XL/OpenMP4
+  #--------------------
+
+  rm -rf build_openmp_target_$BUILD
   mkdir -p build_openmp_target_$BUILD
   pushd build_openmp_target_$BUILD
 

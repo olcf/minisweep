@@ -11,6 +11,8 @@
 #ifndef _sweeper_gpu_c_h_
 #define _sweeper_gpu_c_h_
 
+#include "stdio.h"
+
 #include "env.h"
 #include "definitions.h"
 #include "dimensions.h"
@@ -19,10 +21,11 @@
 #include "array_operations.h"
 #include "sweeper_gpu.h"
 
-#ifdef USE_ACC
+#ifdef USE_OPENMP_TARGET
+#include "omp.h"
+#elif USE_ACC
 #include "openacc.h"
 #endif
-
 
 #ifdef __cplusplus
 extern "C"
@@ -257,12 +260,13 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
                                   P* vo,
                                   P* vs_local,
                                   int octant_in_block,
-                                  int noctant_per_block
+                                  int noctant_per_block,
+                                  int ie
                                   )
 {
   /*---Declarations---*/
 //  int iz = 0;
-  int ie = 0;
+//  int ie = 0;
   int im = 0;
   int ia = 0;
   int iu = 0;
@@ -307,12 +311,12 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
     {
 
    /*---Loop over energy groups---*/
-#ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for simd collapse(3) 
-#elif USE_ACC
-#pragma acc loop independent vector, collapse(3)
-#endif
-      for( ie=0; ie<dims_ne; ++ie )
+//#ifdef USE_OPENMP_TARGET
+//#pragma omp target teams distribute parallel for simd collapse(3) 
+//#elif USE_ACC
+//#pragma acc loop independent vector, collapse(3)
+//#endif
+//      for( ie=0; ie<dims_ne; ++ie )
       {
 
       /*--------------------*/
@@ -326,6 +330,13 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
            processor cache.
       ---*/
 
+#ifdef USE_OPENMP_TARGET
+//FIX ?
+//#pragma omp for simd collapse(2) 
+//#pragma omp parallel for collapse(2)
+#elif USE_ACC
+#pragma acc loop independent vector, collapse(2)
+#endif
       for( iu=0; iu<NU; ++iu )
       for( ia=0; ia<dims_na; ++ia )
       { 
@@ -369,13 +380,17 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       /*---Perform solve---*/
       /*--------------------*/
 
-   /*---Loop over energy groups---*/
+//   /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for simd collapse(2) 
+//#pragma omp target teams distribute parallel for simd collapse(2) 
+//FIX ?
+//#pragma omp for simd
+//#pragma omp parallel for
 #elif USE_ACC
-#pragma acc loop independent vector, collapse(2)
+//#pragma acc loop independent vector, collapse(2)
+#pragma acc loop independent vector
 #endif
-      for( ie=0; ie<dims_ne; ++ie )
+      //for( ie=0; ie<dims_ne; ++ie )
       for( ia=0; ia<dims_na; ++ia )
       {
         Quantities_solve_acceldir(vs_local, dims, facexy, facexz, faceyz, 
@@ -395,12 +410,16 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for simd collapse(3) 
+//#pragma omp target teams distribute parallel for simd collapse(3) 
+//FIX ?
+//#pragma omp for simd collapse(2)
+//#pragma omp parallel for collapse(2)
 #elif USE_ACC
-#pragma acc loop independent vector, collapse(3)
+//#pragma acc loop independent vector, collapse(3)
+#pragma acc loop independent vector, collapse(2)
 #endif
-      for( ie=0; ie<dims_ne; ++ie )
-      {
+//      for( ie=0; ie<dims_ne; ++ie )
+//      {
 
       for( iu=0; iu<NU; ++iu )
       for( im=0; im<dims_nm; ++im )
@@ -431,7 +450,13 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 
         /*--- ref_state inline ---*/
 #ifdef USE_OPENMP_TARGET
-//#pragma omp atomic update
+//FIX ?
+// The following line fails (if pragma simd enabled above) under LLVM, apparent compiler bug:
+// see https://www.openmp.org/spec-html/5.0/openmpsu42.html
+// https://lists.llvm.org/pipermail/cfe-commits/Week-of-Mon-20160627/163605.html
+// Note the atomic directive appears to be needed:
+// see p. 8 of https://sc18.supercomputing.org/proceedings/workshops/workshop_files/ws_waccpd109s2-file1.pdf
+#pragma omp atomic
 #elif USE_ACC
 #pragma acc atomic update
 #endif
@@ -444,7 +469,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
            0 ))))))] += result;
       }
 
-      } /*---ie---*/
+//      } /*---ie---*/
 
     } /*--- iz ---*/
 }
@@ -490,7 +515,8 @@ void Sweeper_sweep_block_acceldir(
   int mpi_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   int device_num = mpi_rank % num_devices;
-  printf("%d: num_devices = %d, device_num = %d\n",mpi_rank,num_devices,device_num);
+  if (0 == step)
+    printf("%d: num_devices = %d, device_num = %d\n",mpi_rank,num_devices,device_num);
 
 #ifdef USE_OPENMP_TARGET
   omp_set_default_device( device_num );
@@ -831,6 +857,7 @@ void Sweeper_sweep_block_acceldir(
 #endif
   {
 
+#if 0
   /*---Loop over octants---*/
   for( octant=0; octant<NOCTANT; ++octant )
   {
@@ -905,6 +932,64 @@ void Sweeper_sweep_block_acceldir(
     } /*--- wavefront ---*/
 
   } /*---octant---*/
+#endif
+
+#if 1
+    const int num_wavefronts = dims_b_ncell_z + dims_b_ncell_y + dims_b_ncell_x - 2;
+
+#ifdef USE_OPENMP_TARGET
+//FIX
+//#pragma omp target teams distribute parallel for collapse(2)
+#pragma omp target teams distribute collapse(2)
+#elif USE_ACC
+    #pragma acc parallel loop independent gang, collapse(2)
+#endif
+    for( ie=0; ie<dims_b_ne; ++ie )
+    for( octant=0; octant<NOCTANT; ++octant )
+    /*--- Loop over wavefronts ---*/
+    for (wavefront = 0; wavefront < num_wavefronts; wavefront++)
+    {
+
+      for( int iywav=0; iywav<dims_b_ncell_y; ++iywav )
+      for( int ixwav=0; ixwav<dims_b_ncell_x; ++ixwav )
+      {
+
+        if (stepinfoall.stepinfo[octant].is_active) {
+
+          /*---Decode octant directions from octant number---*/
+
+          const int dir_x = Dir_x( octant );
+          const int dir_y = Dir_y( octant );
+          const int dir_z = Dir_z( octant );
+
+          const int octant_in_block = octant;
+
+          const int ix = dir_x==DIR_UP ? ixwav : dims_b_ncell_x - 1 - ixwav;
+          const int iy = dir_y==DIR_UP ? iywav : dims_b_ncell_y - 1 - iywav;
+          const int izwav = wavefront - ixwav - iywav;
+          const int iz = dir_z==DIR_UP ? izwav : (dims_b_ncell_z-1) - izwav;
+
+          const int ix_g = ix + ix_base; // dims_b_ncell_x * proc_x;
+          const int iy_g = iy + iy_base; // dims_b_ncell_y * proc_y;
+          const int iz_g = iz + stepinfoall.stepinfo[octant].block_z * dims_b_ncell_z;
+
+          const int v_offset = stepinfoall.stepinfo[octant].block_z * v_b_size;
+
+          /*--- In-gridcell computations ---*/
+          Sweeper_sweep_cell_acceldir( dims_b, wavefront, octant, ix, iy,
+                                       ix_g, iy_g, iz_g,
+                                       dir_x, dir_y, dir_z,
+                                       facexy, facexz, faceyz,
+                                       a_from_m, m_from_a,
+                                       &(vi[v_offset]), &(vo[v_offset]), vs_local,
+                                       octant_in_block, noctant_per_block, ie );
+
+        } /*---if---*/
+
+      } /*---octant/ix/iy---*/
+
+    } /*--- wavefront ---*/
+#endif
  
   }   /*--- #pragma acc data present ---*/
 

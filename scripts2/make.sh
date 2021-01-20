@@ -9,6 +9,10 @@ printf -- '-%.0s' {1..79}; echo ""
 
 for BUILD in Debug Release ; do
 
+  #--------------------
+  #--- PGI/OpenACC
+  #--------------------
+
   pushd build_openacc_$BUILD
 
   module load pgi
@@ -26,6 +30,10 @@ for BUILD in Debug Release ; do
   #-----
   printf -- '-%.0s' {1..79}; echo ""
   #-----
+
+  #--------------------
+  #--- GCC/CUDA
+  #--------------------
 
   pushd build_cuda_$BUILD
 
@@ -46,6 +54,10 @@ for BUILD in Debug Release ; do
   #-----
   printf -- '-%.0s' {1..79}; echo ""
   #-----
+
+  #--------------------
+  #--- XL/OpenMP4
+  #--------------------
 
   pushd build_openmp_target_$BUILD
 
