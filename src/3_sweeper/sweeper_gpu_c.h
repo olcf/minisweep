@@ -912,7 +912,6 @@ void Sweeper_sweep_block_acceldir(
       } /*---octant/ix/iy---*/
 
     } /*--- wavefront ---*/
-#endif
  
   }   /*--- #pragma acc data present ---*/
 
