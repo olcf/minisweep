@@ -26,7 +26,7 @@ function main ()
   #--- PGI/OpenACC
   #--------------------
 
-  if [ 0 = 1 ] ; then
+  if [ 1 = 1 ] ; then
 
     pushd build_openacc_$BUILD
 
@@ -127,7 +127,7 @@ function main ()
   #--- XL/OpenMP4
   #--------------------
 
-  if [ 1 = 1 ] ; then
+  if [ 0 = 1 ] ; then
 
     pushd build_openmp_target_$BUILD
 

@@ -632,6 +632,13 @@ void Sweeper_sweep(
 
   /*---Initialize result array to zero if needed---*/
 
+#ifdef SWEEPER_KBA_ACC
+  initialize_state_zero( Pointer_h( vo ), sweeper->dims, NU );
+#endif
+#ifdef SWEEPER_KBA_OPENMP_TARGET
+  initialize_state_zero( Pointer_h( vo ), sweeper->dims, NU );
+#endif
+
 #ifdef USE_OPENMP_VO_ATOMIC
   initialize_state_zero( Pointer_h( vo ), sweeper->dims, NU );
   Pointer_update_d_stream( vo, Env_cuda_stream_kernel_faces( env ) );
