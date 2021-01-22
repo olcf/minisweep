@@ -333,7 +333,6 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 #ifdef USE_OPENMP_TARGET
 //FIX ?
 //#pragma omp for simd collapse(2) 
-#pragma omp target teams distribute parallel for simd collapse(2)
 //#pragma omp parallel for collapse(2)
 #elif defined(USE_ACC)
 #pragma acc loop independent vector, collapse(2)
@@ -383,7 +382,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 
 //   /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for simd collapse(2) 
+//#pragma omp target teams distribute parallel for simd
 //FIX ?
 //#pragma omp for simd
 //#pragma omp parallel for
@@ -411,7 +410,6 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 
    /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-#pragma omp target teams distribute parallel for simd collapse(3) 
 //FIX ?
 //#pragma omp for simd collapse(2)
 //#pragma omp parallel for collapse(2)
