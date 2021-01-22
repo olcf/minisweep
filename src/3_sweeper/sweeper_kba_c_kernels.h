@@ -102,14 +102,14 @@ TARGET_HD static inline void Sweeper_sweep_cell(
         int sweeper_thread_u = 0;
         for( sweeper_thread_u=0; sweeper_thread_u<NTHREAD_U;
                                                           ++sweeper_thread_u )
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma ivdep
 #endif
 /*
 #pragma simd assert, vectorlengthfor( P )
 TODO: fix vectorization for this loop.
 */
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma simd vectorlengthfor( P )
 #endif
         for( sweeper_thread_m=0; sweeper_thread_m<NTHREAD_M;
@@ -124,7 +124,7 @@ TODO: fix vectorization for this loop.
                 NM*1 > NTHREAD_M*1 )
             {
               int iu_base = 0;
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
               for( iu_base=0; iu_base<NU; iu_base += NTHREAD_U )
@@ -176,7 +176,7 @@ TODO: fix vectorization for this loop.
                                                                  * sizeof(P) );
 #if !defined(USE_CUDA) || !defined(__CUDA_ARCH__)
         int sweeper_thread_a = 0;
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma ivdep
 #pragma simd assert, vectorlengthfor( P )
 #endif
@@ -192,7 +192,7 @@ TODO: fix vectorization for this loop.
 
             P v[NU];
 
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
             for( iu=0; iu<NU; ++iu )
@@ -215,7 +215,7 @@ TODO: fix vectorization for this loop.
                                              NM,
                                              sweeper->dims_b.na,
                                              im, ia, octant );
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
                 for( iu=0; iu<NU; ++iu )
@@ -233,7 +233,7 @@ TODO: fix vectorization for this loop.
 
             if( im_base == 0 )
             {
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
               for( iu=0; iu<NU; ++iu )
@@ -248,7 +248,7 @@ TODO: fix vectorization for this loop.
             }
             else
             {
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
               for( iu=0; iu<NU; ++iu )
@@ -276,7 +276,7 @@ TODO: fix vectorization for this loop.
     __assume_aligned( faceyz,  VEC_LEN * sizeof(P) );
 #if !defined(USE_CUDA) || !defined(__CUDA_ARCH__)
     int sweeper_thread_a = 0;
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma ivdep
 #pragma simd assert, vectorlengthfor( P )
 #endif
@@ -323,7 +323,7 @@ TODO: fix vectorization for this loop.
         int sweeper_thread_m = 0;
         for( sweeper_thread_u=0; sweeper_thread_u<NTHREAD_U;
                                                            ++sweeper_thread_u )
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma ivdep
 #pragma simd assert, vectorlengthfor( P )
 #endif
@@ -336,7 +336,7 @@ TODO: fix vectorization for this loop.
           P w[NU_PER_THREAD];
 
           int iu_per_thread = 0;
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
           for( iu_per_thread=0; iu_per_thread<NU_PER_THREAD; ++iu_per_thread )
@@ -365,7 +365,7 @@ TODO: fix vectorization for this loop.
             if( Bool_false )
 #endif
             {
-#ifndef USE_SPEC
+#ifndef SPEC
 #ifdef __MIC__
 /* "If applied to outer loop nests, the current implementation supports complete outer loop unrolling." */
 #pragma unroll
@@ -382,7 +382,7 @@ TODO: fix vectorization for this loop.
                                                        sweeper->dims_b.na,
                                                        im, ia, octant ) ];
                 {
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
                   for( iu_per_thread=0; iu_per_thread<NU_PER_THREAD;
@@ -408,7 +408,7 @@ TODO: fix vectorization for this loop.
             }
             else /*---ia_base---*/
             {
-#ifndef USE_SPEC
+#ifndef SPEC
 #ifdef __MIC__
 /* "If applied to outer loop nests, the current implementation supports complete outer loop unrolling." */
 #pragma unroll
@@ -427,7 +427,7 @@ TODO: fix vectorization for this loop.
                                                        im, ia, octant ) ]
                                     : ((P)0);
                 {
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
                   for( iu_per_thread=0; iu_per_thread<NU_PER_THREAD;
@@ -460,7 +460,7 @@ TODO: fix vectorization for this loop.
             if( ia_base == 0 ||
                 NM*1 > NTHREAD_M*1 )
             {
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
               for( iu_per_thread=0; iu_per_thread<NU_PER_THREAD;
@@ -478,7 +478,7 @@ TODO: fix vectorization for this loop.
             }
             else
             {
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
               for( iu_per_thread=0; iu_per_thread<NU_PER_THREAD;
@@ -508,7 +508,7 @@ TODO: fix vectorization for this loop.
             {
               int iu_base = 0;
 #ifdef USE_OPENMP_VO_ATOMIC
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
               for( iu_base=0; iu_base<NU; iu += NTHREAD_U )
@@ -528,7 +528,7 @@ TODO: fix vectorization for this loop.
               if( ( ! do_block_init_this ) ||
                   ( NM*1 > NTHREAD_M*1 && ! ( ia_base==0 ) ) )
               {
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
                 for( iu_base=0; iu_base<NU; iu_base += NTHREAD_U )
@@ -556,7 +556,7 @@ TODO: fix vectorization for this loop.
               }
               else
               {
-#ifndef USE_SPEC
+#ifndef SPEC
 #pragma unroll
 #endif
                 for( iu_base=0; iu_base<NU; iu_base += NTHREAD_U )

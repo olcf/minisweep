@@ -19,7 +19,7 @@
 /* #endif */
 /* #endif */
 
-#ifdef USE_SPEC
+#ifdef SPEC
 #ifdef SPEC_OPENACC
   #define USE_ACC
 #else
@@ -35,7 +35,7 @@
   #else
     #define SWEEPER_ACC
   #endif
-#elif USE_OPENMP_TARGET
+#elif defined(USE_OPENMP_TARGET)
   #ifdef USE_KBA
     //TODO - make this work
     #define SWEEPER_KBA_OPENMP_TARGET
