@@ -111,15 +111,27 @@ void Env_mpi_set_values_( Env *env, Arguments* args )
   int mpi_code = 0;
   if( mpi_code ) {} /*---Remove unused var warning---*/
 
+  int nproc_world = 0;
+  mpi_code = MPI_Comm_size( MPI_COMM_WORLD, &nproc_world );
+  Assert( mpi_code == MPI_SUCCESS );
+
+#ifdef SPEC
+
+  /* Forces a perfect square */
+  int nproc_square = (int) sqrt(nproc_world);
+  env->nproc_x_ = nproc_square;
+  env->nproc_y_ = nproc_square;
+  const int nproc_requested = pow(nproc_square,2);
+  printf("nproc_used = %d\n",nproc_requested);
+
+#else
+  const int nproc_requested = env->nproc_x_ * env->nproc_y_;
   env->nproc_x_ = Arguments_consume_int_or_default( args, "--nproc_x", 1 );
   env->nproc_y_ = Arguments_consume_int_or_default( args, "--nproc_y", 1 );
   Insist( env->nproc_x_ > 0 ? "Invalid nproc_x supplied." : 0 );
   Insist( env->nproc_y_ > 0 ? "Invalid nproc_y supplied." : 0 );
+#endif
 
-  const int nproc_requested = env->nproc_x_ * env->nproc_y_;
-  int nproc_world = 0;
-  mpi_code = MPI_Comm_size( MPI_COMM_WORLD, &nproc_world );
-  Assert( mpi_code == MPI_SUCCESS );
   Insist( nproc_requested <= nproc_world ?
                                       "Not enough processors available." : 0 );
 

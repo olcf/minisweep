@@ -44,6 +44,12 @@ extern "C"
   enum{ IS_USING_OPENMP_TASKS = 0};
 #endif
 
+#ifdef USE_OPENMP_TARGET
+  enum{ IS_USING_OPENMP_TARGET = 1};
+#else
+  enum{ IS_USING_OPENMP_TARGET = 0};
+#endif
+
 /*---NOTE: these should NOT be accessed outside of the Sweeper pseudo-class---*/
 
 enum{ NTHREAD_DEVICE_U = VEC_LEN <= NU                  ? VEC_LEN :

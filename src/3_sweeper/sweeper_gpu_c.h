@@ -573,6 +573,10 @@ void Sweeper_sweep_block_acceldir(
   const int proc_x = Env_proc_x_this( env );
   const int proc_y = Env_proc_y_this( env );
 
+  //Check nproc_x and nproc_y values
+  //printf("Env_nproc_x = %d\n",Env_nproc_x(env));
+  //printf("Env_nproc_y = %d\n",Env_nproc_y(env));
+
   const Bool_t proc_x_min = 0 == proc_x;
   const Bool_t proc_x_max = Env_nproc_x( env ) - 1 == proc_x;
   const Bool_t proc_y_min = 0 == proc_y;

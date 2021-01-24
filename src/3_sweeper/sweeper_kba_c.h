@@ -93,6 +93,7 @@ void Sweeper_create( Sweeper*          sweeper,
   /*---Don't allow threading in cases where it doesn't make sense---*/
   Insist( sweeper->nthread_octant==1 || IS_USING_OPENMP_THREADS
                                      || IS_USING_OPENMP_TASKS
+                                     || IS_USING_OPENMP_TARGET
                                      || Env_cuda_is_using_device( env ) ?
           "Threading not allowed for this case" : 0 );
 
@@ -179,6 +180,7 @@ void Sweeper_create( Sweeper*          sweeper,
   /*---Don't allow threading in cases where it doesn't make sense---*/
   Insist( sweeper->nthread_e==1 || IS_USING_OPENMP_THREADS
                                 || IS_USING_OPENMP_TASKS
+                                || IS_USING_OPENMP_TARGET
                                 || Env_cuda_is_using_device( env ) ?
           "Threading not allowed for this case" : 0 );
 
