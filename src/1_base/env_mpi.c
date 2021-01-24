@@ -47,7 +47,31 @@ void Env_mpi_initialize_( Env *env, int argc, char** argv )
   /*---Initialize for MPI execution---*/
   const int mpi_code = MPI_Init( &argc, &argv );
   Assert( mpi_code == MPI_SUCCESS );
+#ifdef SPEC
+#if defined(SPEC_OPENACC) || defined(SPEC_OPENMP_TARGET)
+  int num_devices, local_rank, gpuId;
+  MPI_Comm shmcomm;
+  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
+                    MPI_INFO_NULL, &shmcomm);
+  MPI_Comm_rank(shmcomm, &local_rank);
+#ifdef SPEC_OPENACC
+  acc_device_t my_device_type;
+  num_devices = acc_get_num_devices(acc_device_default);
+  my_device_type = acc_get_device_type();
+  num_devices = acc_get_num_devices(my_device_type);
+  gpuId = local_rank % num_devices;
+  acc_set_device_num(gpuId, my_device_type);
+#else
+  num_devices = omp_get_num_devices();
+  if (num_devices > 0) {
+    gpuId = local_rank % num_devices;
+    omp_set_default_device(gpuId);
+  }
 #endif
+#endif
+#endif
+#endif
+
   Env_mpi_nullify_values_( env );
 }
 
@@ -116,22 +140,18 @@ void Env_mpi_set_values_( Env *env, Arguments* args )
   Assert( mpi_code == MPI_SUCCESS );
 
 #ifdef SPEC
-
-  /* Forces a perfect square */
+  /* Forces a perfect square for the process grid */
   int nproc_square = (int) sqrt(nproc_world);
   env->nproc_x_ = nproc_square;
   env->nproc_y_ = nproc_square;
-  const int nproc_requested = pow(nproc_square,2);
-  printf("nproc_used = %d\n",nproc_requested);
-
 #else
-  const int nproc_requested = env->nproc_x_ * env->nproc_y_;
   env->nproc_x_ = Arguments_consume_int_or_default( args, "--nproc_x", 1 );
   env->nproc_y_ = Arguments_consume_int_or_default( args, "--nproc_y", 1 );
   Insist( env->nproc_x_ > 0 ? "Invalid nproc_x supplied." : 0 );
   Insist( env->nproc_y_ > 0 ? "Invalid nproc_y supplied." : 0 );
 #endif
 
+  const int nproc_requested = env->nproc_x_ * env->nproc_y_;
   Insist( nproc_requested <= nproc_world ?
                                       "Not enough processors available." : 0 );
 
