@@ -19,6 +19,10 @@
 #include "arguments.h"
 #include "env_mpi.h"
 
+#ifdef SPEC_OPENACC
+#include <openacc.h>
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -135,6 +139,7 @@ void Env_mpi_set_values_( Env *env, Arguments* args )
   int mpi_code = 0;
   if( mpi_code ) {} /*---Remove unused var warning---*/
 
+  /*--- Get number of ranks ---*/
   int nproc_world = 0;
   mpi_code = MPI_Comm_size( MPI_COMM_WORLD, &nproc_world );
   Assert( mpi_code == MPI_SUCCESS );
