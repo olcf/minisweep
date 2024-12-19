@@ -19,6 +19,8 @@
 #endif
 
 #include "types.h"
+#include "arguments.h"
+#include "env_types.h"
 #include "env_cuda_kernels.h"
 
 #ifdef __cplusplus
