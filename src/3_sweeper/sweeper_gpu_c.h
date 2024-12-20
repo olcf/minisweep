@@ -333,7 +333,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 #ifdef USE_OPENMP_TARGET
 //FIX ?
 //#pragma omp for simd collapse(2) 
-//#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
 #elif defined(USE_ACC)
 #pragma acc loop independent vector, collapse(2)
 #endif
@@ -385,7 +385,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 //#pragma omp target teams distribute parallel for simd
 //FIX ?
 //#pragma omp for simd
-//#pragma omp parallel for
+#pragma omp parallel for
 #elif defined(USE_ACC)
 //#pragma acc loop independent vector, collapse(2)
 #pragma acc loop independent vector
@@ -412,7 +412,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
 #ifdef USE_OPENMP_TARGET
 //FIX ?
 //#pragma omp for simd collapse(2)
-//#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
 #elif defined(USE_ACC)
 //#pragma acc loop independent vector, collapse(3)
 #pragma acc loop independent vector, collapse(2)
@@ -670,6 +670,7 @@ void Sweeper_sweep_block_acceldir(
   if (is_first_step) {
 
 #ifdef USE_OPENMP_TARGET
+// unnecessary data movement -- next region is also on the device
 //#pragma omp target update from(facexy[0:facexy_size], stepinfoall)
 #elif defined(USE_ACC)
     #pragma acc parallel present(facexy[:facexy_size], stepinfoall)
@@ -725,6 +726,7 @@ void Sweeper_sweep_block_acceldir(
   /*---FACE XZ---*/
 
 #ifdef USE_OPENMP_TARGET
+// unnecessary data movement -- next region is also on the device
 //#pragma omp target update from(facexz[0:facexz_size], stepinfoall)
 #elif defined(USE_ACC)
   #pragma acc parallel present(facexz[:facexz_size], stepinfoall)
@@ -740,7 +742,6 @@ void Sweeper_sweep_block_acceldir(
     for( iz=0; iz<dims_b_ncell_z; ++iz )
     for( ix=0; ix<dims_b_ncell_x; ++ix )
 #ifdef USE_OPENMP_TARGET
-// review this pragma
 #pragma omp parallel for collapse(3)
 #elif defined(USE_ACC)
     #pragma acc loop independent vector collapse(3)
@@ -781,6 +782,7 @@ void Sweeper_sweep_block_acceldir(
 
   /*---FACE YZ---*/
 #ifdef USE_OPENMP_TARGET
+// unnecessary data movement -- next region is also on the device
 //#pragma omp target update from(faceyz[0:faceyz_size], stepinfoall)
 #elif defined(USE_ACC)
   #pragma acc parallel present(faceyz[:faceyz_size], stepinfoall)
@@ -796,7 +798,6 @@ void Sweeper_sweep_block_acceldir(
     for( iz=0; iz<dims_b_ncell_z; ++iz )
     for( iy=0; iy<dims_b_ncell_y; ++iy )
 #ifdef USE_OPENMP_TARGET
-// review this pragma
 #pragma omp parallel for collapse(3)
 #elif defined(USE_ACC)
     #pragma acc loop independent vector collapse(3)
@@ -836,6 +837,7 @@ void Sweeper_sweep_block_acceldir(
   } /*--- #pragma acc parallel ---*/
 
 #ifdef USE_OPENMP_TARGET
+// un-needed -- the next region is also on the target device
 //#pragma omp target update from(a_from_m[0:a_from_m_size], \
                                m_from_a[0:m_from_a_size], \
                                vi[0:v_size], \
@@ -863,8 +865,6 @@ void Sweeper_sweep_block_acceldir(
     const int num_wavefronts = dims_b_ncell_z + dims_b_ncell_y + dims_b_ncell_x - 2;
 
 #ifdef USE_OPENMP_TARGET
-//FIX
-//#pragma omp target teams distribute parallel for collapse(2)
 #pragma omp target teams distribute collapse(2)
 #elif defined(USE_ACC)
     #pragma acc parallel loop independent gang, collapse(2)
