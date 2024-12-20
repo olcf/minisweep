@@ -9,6 +9,7 @@
 /*---------------------------------------------------------------------------*/
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -192,6 +193,10 @@ Bool_t Arguments_are_all_consumed( const Arguments* args )
   for( i=1; i<args->argc; ++i ) /*---Note: skip the zeroth element---*/
   {
     result = result && args->argv_unconsumed[i] == NULL;
+    // This is only called in fatal "INSIST" situations, so print a helpful message
+    if (args->argv_unconsumed[i] != NULL) {
+      printf("Unconsumed flag:%s\n",args->argv_unconsumed[i]);
+    }
   }
 
   return result;
