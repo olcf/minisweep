@@ -49,7 +49,6 @@ cmake \
 make VERBOSE=1 install
 
 popd # build_*
-exit
 
 #-------------------------
 #--- AMD/OpenMPOffload~MPI
