@@ -166,7 +166,8 @@ P* malloc_host_pinned_P( size_t n )
   cudaMallocHost( &result, n==0 ? ((size_t)1) : n*sizeof(P) );
   Assert( Env_cuda_last_call_succeeded() );
 #elif defined USE_HIP
-  hipHostMalloc( (void**) &result, n==0 ? ((size_t)1) : n*sizeof(P), hipHostMallocDefault );
+  //hipHostMalloc( (void**) &result, n==0 ? ((size_t)1) : n*sizeof(P), hipHostMallocDefault );
+  hipHostMalloc( (void**) &result, n==0 ? ((size_t)1) : n*sizeof(P) );
   Assert( Env_cuda_last_call_succeeded() );
 #else
   result = (P*)malloc( n * sizeof(P) );
@@ -222,7 +223,7 @@ void free_host_pinned_P( P* p )
   cudaFreeHost( p );
   Assert( Env_cuda_last_call_succeeded() );
 #elif defined USE_HIP
-  hipHostFree( p );
+  hipHostFree( (void*) p );
   Assert( Env_cuda_last_call_succeeded() );
 #else
   free( (void*) p );
