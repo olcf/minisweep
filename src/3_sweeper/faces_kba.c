@@ -12,7 +12,7 @@
 #include "faces_kba.h"
 #include "array_operations.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -480,7 +480,7 @@ void Faces_recv_faces_end(
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

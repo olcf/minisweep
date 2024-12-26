@@ -15,7 +15,7 @@
 #include "definitions.h"
 #include "dimensions.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -102,7 +102,7 @@ size_t Dimensions_size_faceyz( const Dimensions dims,
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

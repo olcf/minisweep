@@ -11,7 +11,13 @@
 #ifndef _types_kernels_h_
 #define _types_kernels_h_
 
-#ifdef __cplusplus
+#if defined USE_CUDA
+#include "cuda.h"
+#elif defined USE_HIP
+#include "hip/hip_runtime.h"
+#endif
+
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -19,7 +25,7 @@ extern "C"
 /*===========================================================================*/
 /*---Function attributes---*/
 
-#ifdef USE_CUDA
+#if defined USE_CUDA || defined USE_HIP
 
 #define TARGET_G  __global__
 #define TARGET_HD __host__ __device__
@@ -50,7 +56,7 @@ TARGET_HD static inline P P_one()  { return (P)1; }
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

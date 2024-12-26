@@ -10,13 +10,13 @@
 
 #include "env_assert.h"
 
-#ifndef __CUDA_ARCH__
+#if (! defined __CUDA_ARCH__) && (! defined __HIP_DEVICE_COMPILE__)
 /*---Do the following on the HDST---*/
 
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -33,10 +33,10 @@ void insist_( const char *condition_string, const char *file, int line )
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 
-#endif /*---__CUDA_ARCH__---*/
+#endif /*---(! defined __CUDA_ARCH__) && (! defined __HIP_DEVICE_COMPILE__)---*/
 
 /*---------------------------------------------------------------------------*/

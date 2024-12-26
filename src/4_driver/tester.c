@@ -48,10 +48,10 @@ static void test_serial( Env* env, int* ntest, int* ntest_passed )
 #ifdef SWEEPER_KBA
 #ifndef USE_MPI
 #ifndef USE_OPENMP
-#ifndef USE_CUDA
-  const Bool_t do_tests = Bool_true;
-#else
+#if defined USE_CUDA || defined USE_HIP
   const Bool_t do_tests = Bool_false;
+#else
+  const Bool_t do_tests = Bool_true;
 #endif
 #else
   const Bool_t do_tests = Bool_false;
@@ -106,10 +106,10 @@ static void test_openmp( Env* env, int* ntest, int* ntest_passed )
 #ifdef SWEEPER_KBA
 #ifndef USE_MPI
 #ifdef USE_OPENMP_THREADS
-#ifndef USE_CUDA
-  const Bool_t do_tests = Bool_true;
-#else
+#if defined USE_CUDA || defined USE_HIP
   const Bool_t do_tests = Bool_false;
+#else
+  const Bool_t do_tests = Bool_true;
 #endif
 #else
   const Bool_t do_tests = Bool_false;
@@ -219,10 +219,10 @@ static void test_openmp_tasks( Env* env, int* ntest, int* ntest_passed )
 #ifdef SWEEPER_KBA
 #ifndef USE_MPI
 #ifdef USE_OPENMP_TASKS
-#ifndef USE_CUDA
-  const Bool_t do_tests = Bool_true;
-#else
+#if defined USE_CUDA || defined USE_HIP
   const Bool_t do_tests = Bool_false;
+#else
+  const Bool_t do_tests = Bool_true;
 #endif
 #else
   const Bool_t do_tests = Bool_false;
@@ -292,7 +292,7 @@ static void test_cuda( Env* env, int* ntest, int* ntest_passed )
 #ifdef SWEEPER_KBA
 #ifdef USE_MPI
 #ifndef USE_OPENMP
-#ifdef USE_CUDA
+#if defined USE_CUDA || defined USE_HIP
   const Bool_t do_tests = Bool_true;
 #else
   const Bool_t do_tests = Bool_false;
@@ -397,10 +397,10 @@ static void test_mpi( Env* env, int* ntest, int* ntest_passed )
 #ifdef SWEEPER_KBA
 #ifdef USE_MPI
 #ifndef USE_OPENMP
-#ifndef USE_CUDA
-  const Bool_t do_tests = Bool_true;
-#else
+#if defined USE_CUDA || defined USE_HIP
   const Bool_t do_tests = Bool_false;
+#else
+  const Bool_t do_tests = Bool_true;
 #endif
 #else
   const Bool_t do_tests = Bool_false;
@@ -460,7 +460,7 @@ static void test_mpi_cuda( Env* env, int* ntest, int* ntest_passed )
 #ifdef SWEEPER_KBA
 #ifdef USE_MPI
 #ifndef USE_OPENMP
-#ifdef USE_CUDA
+#if defined USE_CUDA || defined USE_HIP
   const Bool_t do_tests = Bool_true;
 #else
   const Bool_t do_tests = Bool_false;
@@ -565,10 +565,10 @@ static void test_variants( Env* env, int* ntest, int* ntest_passed )
 #ifndef SWEEPER_KBA
 #ifndef USE_MPI
 #ifndef USE_OPENMP
-#ifndef USE_CUDA
-  const Bool_t do_tests = Bool_true;
-#else
+#if defined USE_CUDA || defined USE_HIP
   const Bool_t do_tests = Bool_false;
+#else
+  const Bool_t do_tests = Bool_true;
 #endif
 #else
   const Bool_t do_tests = Bool_false;

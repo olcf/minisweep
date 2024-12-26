@@ -20,7 +20,7 @@
 #include "faces_kba.h"
 #include "stepscheduler_kba.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -114,7 +114,7 @@ void Sweeper_sweep_block(
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

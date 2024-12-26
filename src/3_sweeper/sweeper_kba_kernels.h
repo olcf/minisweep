@@ -18,7 +18,7 @@
 #include "pointer_kernels.h"
 #include "quantities_kernels.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -59,7 +59,7 @@ enum{ NTHREAD_DEVICE_U = VEC_LEN <= NU                  ? VEC_LEN :
 enum{ NTHREAD_DEVICE_M = VEC_LEN / NTHREAD_DEVICE_U };
 enum{ NTHREAD_DEVICE_A = NTHREAD_DEVICE_U * NTHREAD_DEVICE_M };
 
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   enum{ NTHREAD_A = NTHREAD_DEVICE_A };
   enum{ NTHREAD_M = NTHREAD_DEVICE_M };
   enum{ NTHREAD_U = NTHREAD_DEVICE_U };
@@ -120,7 +120,7 @@ TARGET_HD static inline int Sweeper_thread_e( const SweeperLite* sweeper )
   Assert(sweeper->thread_e >= 0);
   return sweeper->thread_e;
 #else
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return Env_cuda_threadblock( 0 );
 #else
   Assert( sweeper->nthread_e *
@@ -140,7 +140,7 @@ TARGET_HD static inline int Sweeper_thread_octant( const SweeperLite* sweeper )
   Assert(sweeper->thread_octant >= 0);
   return sweeper->thread_octant;
 #else
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return Env_cuda_thread_in_threadblock( 1 );
 #else
   Assert( sweeper->nthread_e *
@@ -173,7 +173,7 @@ TARGET_HD static inline int Sweeper_thread_y( const SweeperLite* sweeper )
   Assert(sweeper->thread_y >= 0);
   return sweeper->thread_y;
 #else
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return Env_cuda_thread_in_threadblock( 2 ) % sweeper->nthread_y ;
 #else
   Assert( sweeper->nthread_e *
@@ -195,7 +195,7 @@ TARGET_HD static inline int Sweeper_thread_z( const SweeperLite* sweeper )
   Assert(sweeper->thread_z >= 0);
   return sweeper->thread_z;
 #else
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return Env_cuda_thread_in_threadblock( 2 ) / sweeper->nthread_y;
 #else
   Assert( sweeper->nthread_e *
@@ -214,7 +214,7 @@ TARGET_HD static inline int Sweeper_thread_z( const SweeperLite* sweeper )
 
 TARGET_HD static inline int Sweeper_thread_a( const SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return Env_cuda_thread_in_threadblock( 0 );
 #else
   return 0;
@@ -225,7 +225,7 @@ TARGET_HD static inline int Sweeper_thread_a( const SweeperLite* sweeper )
 
 TARGET_HD static inline int Sweeper_thread_m( const SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return Env_cuda_thread_in_threadblock( 0 ) / NTHREAD_U;
 #else
   return 0;
@@ -236,7 +236,7 @@ TARGET_HD static inline int Sweeper_thread_m( const SweeperLite* sweeper )
 
 TARGET_HD static inline int Sweeper_thread_u( const SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return Env_cuda_thread_in_threadblock( 0 ) % NTHREAD_U;
 #else
   return 0;
@@ -248,7 +248,7 @@ TARGET_HD static inline int Sweeper_thread_u( const SweeperLite* sweeper )
 
 TARGET_HD static inline void Sweeper_sync_octant_threads( SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   /*---NOTE: this may not be needed if these threads are mapped in-warp---*/
   Env_cuda_sync_threadblock();
 #else
@@ -265,7 +265,7 @@ if( sweeper->nthread_octant != 1 )
 
 TARGET_HD static inline void Sweeper_sync_yz_threads( SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   /*---NOTE: this may not be needed if these threads are mapped in-warp---*/
   Env_cuda_sync_threadblock();
 #else
@@ -282,7 +282,7 @@ if( sweeper->nthread_y != 1 || sweeper->nthread_z != 1 )
 
 TARGET_HD static inline void Sweeper_sync_amu_threads( SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   /*---NOTE: this may not be needed if these threads are mapped in-warp---*/
   Env_cuda_sync_threadblock();
 #else
@@ -298,7 +298,7 @@ TARGET_HD static inline void Sweeper_sync_amu_threads( SweeperLite* sweeper )
 TARGET_HD static inline P* __restrict__ Sweeper_vilocal_this_(
                                                          SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return ( (P*) Env_cuda_shared_memory() )
     + ( NTHREAD_M *
         NU *
@@ -333,7 +333,7 @@ TARGET_HD static inline P* __restrict__ Sweeper_vilocal_this_(
 TARGET_HD static inline P* __restrict__ Sweeper_vslocal_this_(
                                                          SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return ( (P*) Env_cuda_shared_memory() )
     + ( NTHREAD_M *
         NU *
@@ -368,7 +368,7 @@ TARGET_HD static inline P* __restrict__ Sweeper_vslocal_this_(
 TARGET_HD static inline P* __restrict__ Sweeper_volocal_this_(
                                                          SweeperLite* sweeper )
 {
-#if defined(USE_CUDA) && defined(__CUDA_ARCH__)
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return ( (P*) Env_cuda_shared_memory() )
     + ( NTHREAD_M *
         NU *
@@ -487,7 +487,7 @@ TARGET_G void Sweeper_sweep_block_impl_global(
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

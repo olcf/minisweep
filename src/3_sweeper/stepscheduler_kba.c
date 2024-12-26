@@ -12,7 +12,7 @@
 #include "definitions.h"
 #include "stepscheduler_kba.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -373,7 +373,7 @@ Bool_t StepScheduler_must_do_recv(
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

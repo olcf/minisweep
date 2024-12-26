@@ -17,7 +17,7 @@
 #include "arguments.h"
 #include "quantities.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -83,7 +83,7 @@ void Sweeper_sweep(
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

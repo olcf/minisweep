@@ -15,7 +15,7 @@
 #include "env.h"
 #include "pointer.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -268,7 +268,7 @@ void Pointer_update_d_stream( Pointer* p, Stream_t stream )
 
 /*===========================================================================*/
   
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

@@ -18,7 +18,7 @@
 #include "array_operations.h"
 #include "sweeper_openmp4.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -1000,7 +1000,7 @@ for( octant=0; octant<NOCTANT; ++octant )
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

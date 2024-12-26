@@ -19,7 +19,7 @@
 #include "stepscheduler_kba_kernels.h"
 #include "sweeper_kba_kernels.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -97,7 +97,7 @@ TARGET_HD static inline void Sweeper_sweep_cell(
         __assume_aligned( vilocal, ( VEC_LEN < NTHREAD_M*NTHREAD_U ?
                                      VEC_LEN : NTHREAD_M*NTHREAD_U )
                                                                  * sizeof(P) );
-#if !defined(USE_CUDA) || !defined(__CUDA_ARCH__)
+#if (! defined __CUDA_ARCH__) && (! defined __HIP_DEVICE_COMPILE__)
         int sweeper_thread_m = 0;
         int sweeper_thread_u = 0;
         for( sweeper_thread_u=0; sweeper_thread_u<NTHREAD_U;
@@ -174,7 +174,7 @@ TODO: fix vectorization for this loop.
         __assume_aligned( vilocal,  ( VEC_LEN < NTHREAD_M*NTHREAD_U ?
                                       VEC_LEN : NTHREAD_M*NTHREAD_U )
                                                                  * sizeof(P) );
-#if !defined(USE_CUDA) || !defined(__CUDA_ARCH__)
+#if (! defined __CUDA_ARCH__) && (! defined __HIP_DEVICE_COMPILE__)
         int sweeper_thread_a = 0;
 #ifndef SPEC
 #pragma ivdep
@@ -274,7 +274,7 @@ TODO: fix vectorization for this loop.
     __assume_aligned( facexy,  VEC_LEN * sizeof(P) );
     __assume_aligned( facexz,  VEC_LEN * sizeof(P) );
     __assume_aligned( faceyz,  VEC_LEN * sizeof(P) );
-#if !defined(USE_CUDA) || !defined(__CUDA_ARCH__)
+#if (! defined __CUDA_ARCH__) && (! defined __HIP_DEVICE_COMPILE__)
     int sweeper_thread_a = 0;
 #ifndef SPEC
 #pragma ivdep
@@ -318,7 +318,7 @@ TODO: fix vectorization for this loop.
         __assume_aligned( vilocal,  ( VEC_LEN < NTHREAD_M*NTHREAD_U ?
                                       VEC_LEN : NTHREAD_M*NTHREAD_U )
                                                                  * sizeof(P) );
-#if !defined(USE_CUDA) || !defined(__CUDA_ARCH__)
+#if (! defined __CUDA_ARCH__) && (! defined __HIP_DEVICE_COMPILE__)
         int sweeper_thread_u = 0;
         int sweeper_thread_m = 0;
         for( sweeper_thread_u=0; sweeper_thread_u<NTHREAD_U;
@@ -1424,7 +1424,7 @@ TARGET_G void Sweeper_sweep_block_impl_global(
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

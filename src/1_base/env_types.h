@@ -22,11 +22,13 @@ since these are tightly coupled to the data structure.
 #include "mpi.h"
 #endif
 
-#ifdef USE_CUDA
+#if defined USE_CUDA
 #include "cuda.h"
+#elif defined USE_HIP
+#include "hip/hip_runtime.h"
 #endif
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -42,8 +44,10 @@ typedef int Comm_t;
 typedef int Request_t;
 #endif
 
-#ifdef USE_CUDA
+#if defined USE_CUDA
 typedef cudaStream_t Stream_t;
+#elif defined USE_HIP
+typedef hipStream_t Stream_t;
 #else
 typedef int Stream_t;
 #endif
@@ -53,6 +57,7 @@ typedef int Stream_t;
 
 typedef struct
 {
+  int    pgi_needs_an_element;
 #ifdef USE_MPI
   int    nproc_x_;    /*---Number of procs along x axis---*/
   int    nproc_y_;    /*---Number of procs along y axis---*/
@@ -60,7 +65,7 @@ typedef struct
   Comm_t active_comm_;
   Bool_t is_proc_active_;
 #endif
-#ifdef USE_CUDA
+#if defined USE_CUDA || defined USE_HIP
   Bool_t   is_using_device_;
   Stream_t stream_send_block_;
   Stream_t stream_recv_block_;
@@ -71,7 +76,7 @@ typedef struct
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

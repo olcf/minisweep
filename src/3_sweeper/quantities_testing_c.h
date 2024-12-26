@@ -17,7 +17,7 @@
 #include "pointer.h"
 #include "quantities_testing.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -360,7 +360,7 @@ double Quantities_flops_per_solve( const Dimensions dims )
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

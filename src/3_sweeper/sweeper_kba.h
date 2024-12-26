@@ -23,7 +23,7 @@
 
 #include "sweeper_kba_kernels.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -80,7 +80,6 @@ void Sweeper_create( Sweeper*          sweeper,
 void Sweeper_destroy( Sweeper* sweeper,
                       Env*     env );
 
-#if 0
 /*===========================================================================*/
 /*---Number of octants in an octant block---*/
 
@@ -88,7 +87,6 @@ static int Sweeper_noctant_per_block( const Sweeper* sweeper )
 {
   return sweeper->noctant_per_block;
 }
-#endif
 
 /*===========================================================================*/
 /*---Thread counts for amu for execution target as understood by the host---*/
@@ -269,7 +267,7 @@ void Sweeper_sweep(
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

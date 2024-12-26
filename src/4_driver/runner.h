@@ -15,7 +15,7 @@
 #include "env.h"
 #include "definitions.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -59,7 +59,7 @@ Bool_t compare_runs( const char* argstring1, const char* argstring2, Env* env );
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

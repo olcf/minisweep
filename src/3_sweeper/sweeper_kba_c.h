@@ -24,9 +24,14 @@
 #include "sweeper_gpu.h"
 #endif
 
+#if defined USE_HIP
+#include "hip/hip_runtime_api.h"
+#include "hip/hip_runtime.h"
+#endif
+
 #include "sweeper_kba_kernels.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -416,8 +421,8 @@ static void Sweeper_sweep_block_adapter(
 
   if( Env_cuda_is_using_device( env ) )
   {
+#if defined USE_CUDA
     Sweeper_sweep_block_impl_global
-#ifdef USE_CUDA
                  <<< dim3( Sweeper_nthreadblock( sweeper, 0, env ),
                            Sweeper_nthreadblock( sweeper, 1, env ),
                            Sweeper_nthreadblock( sweeper, 2, env ) ),
@@ -427,8 +432,23 @@ static void Sweeper_sweep_block_adapter(
                      Sweeper_shared_size_( sweeper, env ),
                      Env_cuda_stream_kernel_faces( env )
                  >>>
+                            (
+#elif defined USE_HIP
+    hipLaunchKernelGGL(
+      Sweeper_sweep_block_impl_global,
+                     dim3( Sweeper_nthreadblock( sweeper, 0, env ),
+                           Sweeper_nthreadblock( sweeper, 1, env ),
+                           Sweeper_nthreadblock( sweeper, 2, env ) ),
+                     dim3( Sweeper_nthread_in_threadblock( sweeper, 0, env ),
+                           Sweeper_nthread_in_threadblock( sweeper, 1, env ),
+                           Sweeper_nthread_in_threadblock( sweeper, 2, env ) ),
+                     Sweeper_shared_size_( sweeper, env ),
+                     Env_cuda_stream_kernel_faces( env ),
+#else
+    Sweeper_sweep_block_impl_global
+                            (
 #endif
-                            ( sweeperlite,
+                              sweeperlite,
                               vo,
                               vi,
                               facexy,
@@ -870,7 +890,7 @@ void Sweeper_sweep(
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

@@ -16,7 +16,7 @@
 #include "dimensions.h"
 #include "quantities.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -56,7 +56,7 @@ void copy_vector(       P* const __restrict__ vo,
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

@@ -13,7 +13,7 @@
 
 #include "types_kernels.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -102,7 +102,7 @@ TARGET_HD static inline int iceil( const int i,
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

@@ -25,7 +25,7 @@ Its entries are "read-once": when an entry is read, it is deleted.
 
 #include "types.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -89,7 +89,7 @@ Bool_t Arguments_are_all_consumed( const Arguments* args );
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

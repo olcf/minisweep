@@ -27,7 +27,7 @@
 #include "openacc.h"
 #endif
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -1128,7 +1128,7 @@ void Sweeper_sweep(
 #endif /*---SWEEPER_KBA_OPENMP_TARGET---*/
 #endif /*---SWEEPER_KBA_ACC---*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

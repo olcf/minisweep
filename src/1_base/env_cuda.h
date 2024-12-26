@@ -14,8 +14,11 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#ifdef USE_CUDA
+#if defined USE_CUDA
 #include "cuda.h"
+#elif defined USE_HIP
+#include "hip/hip_runtime.h"
+#include "hip/hip_runtime_api.h"
 #endif
 
 #include "types.h"
@@ -23,7 +26,7 @@
 #include "env_types.h"
 #include "env_cuda_kernels.h"
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 extern "C"
 {
 #endif
@@ -135,7 +138,7 @@ void Env_cuda_stream_wait( Env* env, Stream_t stream );
 
 /*===========================================================================*/
 
-#ifdef __cplusplus
+#ifdef USE_EXTERN_C
 } /*---extern "C"---*/
 #endif
 

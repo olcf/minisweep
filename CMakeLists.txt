@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.9)
 
 # Minisweep is pure C, but for HIP backend, requires .cpp file extensions for hipcc
-project("minisweep" LANGUAGES C CXX)
+project("minisweep" LANGUAGES C)
 
 # Build options:
 SET(NM_VALUE "16" CACHE STRING "The number of moments. Typical values are 1, 4, 16, and 36.")
@@ -48,6 +48,12 @@ SET(SOURCES
   src/3_sweeper/sweeper.c
   src/3_sweeper/sweeper_kernels.c
   src/4_driver/runner.c
+  )
+
+SET(GPU_SOURCES
+  src/1_base/env_cuda.c
+  src/3_sweeper/sweeper.c
+  src/3_sweeper/sweeper_kernels.c
   )
 
 IF(CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -124,6 +130,49 @@ ELSEIF(USE_CUDA)
   TARGET_LINK_LIBRARIES(sweep sweeper)
   CUDA_ADD_EXECUTABLE(tester src/4_driver/tester.cu)
   TARGET_LINK_LIBRARIES(tester sweeper)
+
+ELSEIF(USE_HIP)
+  ENABLE_LANGUAGE(CXX)
+  # HIP backend requires C++ compiler
+  IF(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    message(FATAL_ERROR "HIP backend requires a Clang-based compiler.")
+  ENDIF()
+
+  LIST(APPEND CMAKE_MODULE_PATH
+     $ENV{ROCM_PATH}/lib/cmake/hip)
+  LIST(APPEND CMAKE_PREFIX_PATH $ENV{ROCM_PATH})
+
+  FIND_PACKAGE(hip REQUIRED)
+
+  # Change C to C++ extensions for sources
+  FOREACH(FILE IN LISTS SOURCES)
+    STRING(REPLACE ".c" ".cpp" FILE2 ${FILE})
+    LIST(REMOVE_ITEM SOURCES ${FILE})
+    LIST(APPEND SOURCES ${FILE2})
+  ENDFOREACH()
+
+  # remove HIP sources from SOURCES
+  FOREACH(FILE IN LISTS GPU_SOURCES)
+    STRING(REPLACE ".c" ".cpp" FILE2 ${FILE})
+    LIST(REMOVE_ITEM SOURCES ${FILE2})
+    # Rename to C++ extension in GPU_SOURCES
+    LIST(REMOVE_ITEM GPU_SOURCES ${FILE})
+    LIST(APPEND GPU_SOURCES ${FILE2})
+    # Declare as HIP source
+    SET_SOURCE_FILES_PROPERTIES(${FILE} PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
+  ENDFOREACH()
+
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_HIP")
+
+  # the hip_sweeper library collects all the HIP code from Minisweep
+  ADD_LIBRARY(hip_sweeper STATIC ${GPU_SOURCES})
+  TARGET_COMPILE_OPTIONS(hip_sweeper PRIVATE -x hip)
+  ADD_LIBRARY(sweeper STATIC ${SOURCES})
+
+  ADD_EXECUTABLE(sweep src/4_driver/sweep.cpp)
+  TARGET_LINK_LIBRARIES(sweep sweeper hip_sweeper hip::host)
+  ADD_EXECUTABLE(tester src/4_driver/tester.cpp)
+  TARGET_LINK_LIBRARIES(tester sweeper hip_sweeper hip::host)
 ELSE()
   ADD_LIBRARY(sweeper STATIC ${SOURCES})
   ADD_EXECUTABLE(sweep src/4_driver/sweep.c)
