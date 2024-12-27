@@ -11,21 +11,27 @@ SET(NU_VALUE "4" CACHE STRING "The number of unknowns per gridcell, moment, ener
 SET(RELAXED_TESTING OFF CACHE BOOL "If set, do not strictly test the answers.")
 SET(USE_KBA ON CACHE BOOL "Use the Koch–Baker–Alcouffe parallel wavefront sweep algorithm.")
 SET(USE_MPI OFF CACHE BOOL "Enable MPI.")
+SET(USE_ACCELDIR ON CACHE BOOL "I'm really not sure, but doesn't work without it")
 
 # Performance-related options:
-SET(USE_ACCELDIR ON CACHE BOOL "I'm really not sure, but doesn't work without it")
+SET(USE_OMP OFF CACHE BOOL "Enable host-based OpenMP.")
+
+# GPU kernel-based acceleration
 SET(USE_HIP OFF CACHE BOOL "Enable HIP device offloading.")
 SET(HIP_ARCH "gfx90a" CACHE STRING "The GPU architecture to pass through --offload-arch on the HIP backend.")
 SET(USE_CUDA OFF CACHE BOOL "Enable CUDA device offloading.")
+
+# OpenACC acceleration (not available on Frontier)
 SET(USE_ACC OFF CACHE BOOL "Enable OpenACC acceleration.")
-SET(USE_OMP OFF CACHE BOOL "Enable host-based OpenMP.")
+
+# OpenMP Target offload
 SET(USE_OMP_VO_ATOMIC OFF CACHE BOOL "Enables use of the atomic OpenMP region to update of the VO vector.")
 SET(USE_OMP_TASKS OFF CACHE BOOL "Enable host OpenMP tasks. Otherwise, use OpenMP threads.")
 SET(USE_OMP_OFFLOAD OFF CACHE BOOL "Enable OpenMP target offloading.")
+SET(OMP_OFFLOAD_FLAGS "-fopenmp" CACHE STRING "C compiler flags to enable OpenMP Offloading.")
 
-# Set values of needed flags
-#SET(OMP_FLAGS "-fopenmp" CACHE STRING "C/C++ compiler flags to enable the requested host OpenMP functionality.")
-SET(OMP_OFFLOAD_FLAGS "-fopenmp" CACHE STRING "C/C++ compiler flags to enable OpenMP Offloading.")
+# An alternative OpenMP offload implementation
+SET(USE_OPENMP4 OFF CACHE BOOL "Enable the device-based OpenMP 4 implementation.")
 
 SET(INCLUDE_DIRS
   ${CMAKE_SOURCE_DIR}/src/1_base
@@ -51,6 +57,8 @@ SET(SOURCES
   src/4_driver/runner.c
   )
 
+# A subset of sources, this is the sources that contain GPU kernels
+# Only used by HIP currently
 SET(GPU_SOURCES
   src/1_base/env_cuda.c
   src/3_sweeper/sweeper.c
@@ -101,6 +109,13 @@ IF(USE_OMP)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -DUSE_OPENMP -DUSE_OPENMP_THREADS")
   ENDIF()
 
+  ADD_LIBRARY(sweeper STATIC ${SOURCES})
+  ADD_EXECUTABLE(sweep src/4_driver/sweep.c)
+  TARGET_LINK_LIBRARIES(sweep sweeper)
+  ADD_EXECUTABLE(tester src/4_driver/tester.c)
+  TARGET_LINK_LIBRARIES(tester sweeper)
+ELSEIF(USE_OPENMP4)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_OPENMP4")
   ADD_LIBRARY(sweeper STATIC ${SOURCES})
   ADD_EXECUTABLE(sweep src/4_driver/sweep.c)
   TARGET_LINK_LIBRARIES(sweep sweeper)
@@ -163,7 +178,7 @@ ELSEIF(USE_HIP)
     SET_SOURCE_FILES_PROPERTIES(${FILE} PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
   ENDFOREACH()
 
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_HIP -fno-gpu-rdc")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_HIP")
 
   # the hip_sweeper library collects all the HIP code from Minisweep
   ADD_LIBRARY(hip_sweeper STATIC ${GPU_SOURCES})
