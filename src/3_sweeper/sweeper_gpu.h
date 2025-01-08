@@ -78,7 +78,7 @@ static int Sweeper_noctant_per_block( const Sweeper* sweeper )
   return 1;
 }
 
-#if 0
+#if 1
 /*===========================================================================*/
 /*---Perform a sweep---*/
 

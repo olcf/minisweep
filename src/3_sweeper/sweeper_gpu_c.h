@@ -72,20 +72,20 @@ P Quantities_init_face_acceldir(int ia, int ie, int iu, int scalefactor_space, i
 #elif defined(USE_ACC)
 #pragma acc routine seq
 #endif
-int Quantities_scalefactor_space_acceldir(int ix_g, int iy_g, int iz_g)
+int64_t Quantities_scalefactor_space_acceldir(int ix_g, int iy_g, int iz_g)
 {
-  int result = 0;
+  int64_t result = 0;
 
 #ifndef RELAXED_TESTING
-  const int im = 134456;
-  const int ia = 8121;
-  const int ic = 28411;
+  const int64_t im = 134456;
+  const int64_t ia = 8121;
+  const int64_t ic = 28411;
 
-  result = ( (result+(ix_g+2))*ia + ic ) % im;
-  result = ( (result+(iy_g+2))*ia + ic ) % im;
-  result = ( (result+(iz_g+2))*ia + ic ) % im;
-  result = ( (result+(ix_g+3*iy_g+7*iz_g+2))*ia + ic ) % im;
-  result = ix_g+3*iy_g+7*iz_g+2;
+  result = ( (result+((int64_t) ix_g+2))*ia + ic ) % im;
+  result = ( (result+((int64_t) iy_g+2))*ia + ic ) % im;
+  result = ( (result+((int64_t) iz_g+2))*ia + ic ) % im;
+  result = ( (result+((int64_t) ix_g+3*(int64_t) iy_g+7*(int64_t) iz_g+2))*ia + ic ) % im;
+  result = (int64_t) ix_g+3*(int64_t) iy_g+7*(int64_t) iz_g+2;
   result = result & ( (1<<2) - 1 );
 #endif
   result = 1 << result;
@@ -241,7 +241,7 @@ void Quantities_solve_acceldir(P* vs_local, Dimensions dims, P* facexy, P* facex
 /*---In-gricell computations---*/
 
 #ifdef USE_OPENMP_TARGET
-// no equivalent
+#pragma omp declare target
 #elif defined(USE_ACC)
 #pragma acc routine vector
 #endif
@@ -265,12 +265,9 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
                                   )
 {
   /*---Declarations---*/
-//  int iz = 0;
-//  int ie = 0;
   int im = 0;
   int ia = 0;
   int iu = 0;
-  /* int octant = 0; */
 
   /*--- Dimensions ---*/
   int dims_ncell_x = dims.ncell_x;
@@ -294,30 +291,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
   const int izwav = wavefront - ixwav - iywav;
   const int iz = dir_z==DIR_UP ? izwav : (dims_ncell_z-1) - izwav;
 
-//  int ixwav, iywav, izwav;
-//  if (dir_x==DIR_UP) { ixwav = ix; } else { ixwav = (dims_ncell_x-1) - ix; }
-//  if (dir_y==DIR_UP) { iywav = iy; } else { iywav = (dims_ncell_y-1) - iy; }
-  
-//  if (dir_z==DIR_UP) {
-//    iz = wavefront - (ixwav + iywav); } 
-//  else { 
-//    iz = (dims_ncell_z-1) - (wavefront - (ixwav + iywav));
-//  }
-
   /*--- Bounds check ---*/
   if ((iz >= 0 && iz < dims_ncell_z) )// &&
     /* ((dir_z==DIR_UP && iz <= wavefront) || */
     /*  (dir_z==DIR_DN && (dims_ncell_z-1-iz) <= wavefront))) */
     {
-
-   /*---Loop over energy groups---*/
-//#ifdef USE_OPENMP_TARGET
-//#pragma omp target teams distribute parallel for simd collapse(3) 
-//#elif defined(USE_ACC)
-//#pragma acc loop independent vector, collapse(3)
-//#endif
-//      for( ie=0; ie<dims_ne; ++ie )
-      {
 
       /*--------------------*/
       /*---Transform state vector from moments to angles---*/
@@ -331,8 +309,6 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       ---*/
 
 #ifdef USE_OPENMP_TARGET
-//FIX ?
-//#pragma omp for simd collapse(2) 
 #pragma omp parallel for collapse(2)
 #elif defined(USE_ACC)
 #pragma acc loop independent vector, collapse(2)
@@ -366,31 +342,25 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
         }
 
         /*--- ref_vslocal inline ---*/
-        vs_local[ ia + dims.na * (
-                  iu + NU  * (
-                  ie + dims.ne * (
-                  ix + dims.ncell_x * (
-                  iy + dims.ncell_y * (
-                  octant + NOCTANT * (
-                                       0)))))) ] = result;
-      }
+        int local_index = (int) ia + (int) dims.na * (
+                  (int) iu + (int) NU  * (
+                  (int) ie + (int) dims.ne * (
+                  (int) ix + (int) dims.ncell_x * (
+                  (int) iy + (int) dims.ncell_y * (
+                  (int) octant + (int) NOCTANT * (
+                                       0))))));
+        vs_local[local_index] = result;
       }
 
       /*--------------------*/
       /*---Perform solve---*/
       /*--------------------*/
 
-//   /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-//#pragma omp target teams distribute parallel for simd
-//FIX ?
-//#pragma omp for simd
 #pragma omp parallel for
 #elif defined(USE_ACC)
-//#pragma acc loop independent vector, collapse(2)
 #pragma acc loop independent vector
 #endif
-      //for( ie=0; ie<dims_ne; ++ie )
       for( ia=0; ia<dims_na; ++ia )
       {
         Quantities_solve_acceldir(vs_local, dims, facexy, facexz, faceyz, 
@@ -408,18 +378,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
            the result in the output state vector.
       ---*/
 
-   /*---Loop over energy groups---*/
 #ifdef USE_OPENMP_TARGET
-//FIX ?
-//#pragma omp for simd collapse(2)
 #pragma omp parallel for collapse(2)
 #elif defined(USE_ACC)
-//#pragma acc loop independent vector, collapse(3)
 #pragma acc loop independent vector, collapse(2)
 #endif
-//      for( ie=0; ie<dims_ne; ++ie )
-//      {
-
       for( iu=0; iu<NU; ++iu )
       for( im=0; im<dims_nm; ++im )
       {
@@ -468,10 +431,11 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
            0 ))))))] += result;
       }
 
-//      } /*---ie---*/
-
     } /*--- iz ---*/
 }
+#ifdef USE_OPENMP_TARGET
+#pragma omp end declare target
+#endif
 
 /*===========================================================================*/
 /*---Perform a sweep on a block---*/
@@ -563,10 +527,10 @@ void Sweeper_sweep_block_acceldir(
   int a_from_m_size = dims_b.nm * dims_b.na * NOCTANT;
   int m_from_a_size = dims_b.nm * dims_b.na * NOCTANT;
 
-  int v_size = dims.ncell_x * dims.ncell_y * dims.ncell_z * 
-    dims.ne * dims.nm * NU;
-  int v_b_size = dims_b.ncell_x * dims_b.ncell_y * dims_b.ncell_z * 
-    dims_b.ne * dims_b.nm * NU;
+  int64_t v_size = (int64_t) dims.ncell_x * (int64_t) dims.ncell_y * (int64_t) dims.ncell_z *
+    (int64_t) dims.ne * (int64_t) dims.nm * (int64_t) NU;
+  int64_t v_b_size = (int64_t) dims_b.ncell_x * (int64_t) dims_b.ncell_y * (int64_t) dims_b.ncell_z * 
+    (int64_t) dims_b.ne * (int64_t) dims_b.nm * (int64_t) NU;
 
   int vs_local_size = dims_b.na * NU * dims_b.ne * NOCTANT * dims_b.ncell_x * dims_b.ncell_y;
 
@@ -640,7 +604,7 @@ void Sweeper_sweep_block_acceldir(
   }
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp target data \
+#pragma omp target enter data \
   map(to: dims_b, stepinfoall)
 #elif defined(USE_ACC)
   #pragma acc enter data copyin(dims_b)
@@ -668,11 +632,7 @@ void Sweeper_sweep_block_acceldir(
   /*---FACE XY---*/
 
   if (is_first_step) {
-
-#ifdef USE_OPENMP_TARGET
-// unnecessary data movement -- next region is also on the device
-//#pragma omp target update from(facexy[0:facexy_size], stepinfoall)
-#elif defined(USE_ACC)
+#if defined(USE_ACC)
     #pragma acc parallel present(facexy[:facexy_size], stepinfoall)
 #endif
     {
@@ -725,10 +685,7 @@ void Sweeper_sweep_block_acceldir(
 
   /*---FACE XZ---*/
 
-#ifdef USE_OPENMP_TARGET
-// unnecessary data movement -- next region is also on the device
-//#pragma omp target update from(facexz[0:facexz_size], stepinfoall)
-#elif defined(USE_ACC)
+#if defined(USE_ACC)
   #pragma acc parallel present(facexz[:facexz_size], stepinfoall)
 #endif
   {
@@ -781,10 +738,7 @@ void Sweeper_sweep_block_acceldir(
   } /*--- #pragma acc parallel ---*/
 
   /*---FACE YZ---*/
-#ifdef USE_OPENMP_TARGET
-// unnecessary data movement -- next region is also on the device
-//#pragma omp target update from(faceyz[0:faceyz_size], stepinfoall)
-#elif defined(USE_ACC)
+#if defined(USE_ACC)
   #pragma acc parallel present(faceyz[:faceyz_size], stepinfoall)
 #endif
   {
@@ -836,18 +790,7 @@ void Sweeper_sweep_block_acceldir(
 
   } /*--- #pragma acc parallel ---*/
 
-#ifdef USE_OPENMP_TARGET
-// un-needed -- the next region is also on the target device
-//#pragma omp target update from(a_from_m[0:a_from_m_size], \
-                               m_from_a[0:m_from_a_size], \
-                               vi[0:v_size], \
-                               vo[0:v_size], \
-                               facexy[0:facexy_size], \
-                               facexz[0:facexz_size], \
-                               faceyz[0:faceyz_size], \
-                               dims_b, stepinfoall, \
-                               vs_local[0:vs_local_size])
-#elif defined(USE_ACC)
+#if defined(USE_ACC)
   #pragma acc data \
     present(a_from_m[:a_from_m_size]), \
     present(m_from_a[:m_from_a_size]), \
@@ -923,8 +866,6 @@ void Sweeper_sweep_block_acceldir(
   #pragma acc wait
 #endif
 
-
-
   /*--- Data transfer of results to the host ---*/
   if (is_last_step) {
 #ifdef USE_OPENMP_TARGET
@@ -960,7 +901,7 @@ void Sweeper_sweep_block_acceldir(
 #endif
   }
 #ifdef USE_OPENMP_TARGET
-#pragma omp target exit data map(delete: dims_b, stepinfoall)
+//#pragma omp target exit data map(delete: dims_b, stepinfoall)
 #elif defined(USE_ACC)
   #pragma acc exit data delete(dims_b)
   #pragma acc exit data delete(stepinfoall)
@@ -1023,6 +964,7 @@ void Sweeper_create( Sweeper*          sweeper,
                      Env*              env,
                      Arguments*        args )
 {
+
   sweeper->nblock_z = 1; //NOTE: will not work efficiently in parallel.
   sweeper->noctant_per_block = NOCTANT;
   sweeper->nblock_octant     = NOCTANT / sweeper->noctant_per_block;
@@ -1045,7 +987,6 @@ void Sweeper_create( Sweeper*          sweeper,
                 sweeper->noctant_per_block, is_face_comm_async, env );
 
   /*---Allocate arrays---*/
-
   sweeper->vslocal_host_
     = malloc_host_P( dims.na * NU * dims.ne * NOCTANT * dims.ncell_x * dims.ncell_y );
   //sweeper->facexy  = malloc_host_P( dims.ncell_x * dims.ncell_y * dims.ne *
