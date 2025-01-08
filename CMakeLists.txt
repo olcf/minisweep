@@ -11,7 +11,7 @@ SET(NU_VALUE "4" CACHE STRING "The number of unknowns per gridcell, moment, ener
 SET(RELAXED_TESTING OFF CACHE BOOL "If set, do not strictly test the answers.")
 SET(USE_KBA ON CACHE BOOL "Use the Koch–Baker–Alcouffe parallel wavefront sweep algorithm.")
 SET(USE_MPI OFF CACHE BOOL "Enable MPI.")
-SET(USE_ACCELDIR ON CACHE BOOL "I'm really not sure, but doesn't work without it")
+SET(USE_ACCELDIR OFF CACHE BOOL "I'm really not sure, but OpenMP offload doesn't work without it")
 
 # Performance-related options:
 SET(USE_OMP OFF CACHE BOOL "Enable host-based OpenMP.")
@@ -22,16 +22,23 @@ SET(HIP_ARCH "gfx90a" CACHE STRING "The GPU architecture to pass through --offlo
 SET(USE_CUDA OFF CACHE BOOL "Enable CUDA device offloading.")
 
 # OpenACC acceleration (not available on Frontier)
-SET(USE_ACC OFF CACHE BOOL "Enable OpenACC acceleration.")
+SET(USE_ACC OFF CACHE BOOL "Enable OpenACC acceleration of the Koch-Baker Alcouffe parallel wavefront sweep algorithm.")
 
 # OpenMP Target offload
 SET(USE_OMP_VO_ATOMIC OFF CACHE BOOL "Enables use of the atomic OpenMP region to update of the VO vector.")
 SET(USE_OMP_TASKS OFF CACHE BOOL "Enable host OpenMP tasks. Otherwise, use OpenMP threads.")
-SET(USE_OMP_OFFLOAD OFF CACHE BOOL "Enable OpenMP target offloading.")
+SET(USE_OMP_OFFLOAD OFF CACHE BOOL "Enable OpenMP target offloading of the Koch-Baker Alcouffe parallel wavefront sweep algorithm.")
 SET(OMP_OFFLOAD_FLAGS "-fopenmp" CACHE STRING "C compiler flags to enable OpenMP Offloading.")
 
 # An alternative OpenMP offload implementation
 SET(USE_OPENMP4 OFF CACHE BOOL "Enable the device-based OpenMP 4 implementation.")
+
+# Check for invalid option combinations -- HIP+ACCELDIR, OpenMPTarget+!KBA
+IF(USE_HIP AND USE_ACCELDIR)
+    MESSAGE(FATAL_ERROR "The HIP backend is not compatible with the USE_ACCELDIR option.")
+ELSEIF(USE_OMP_OFFLOAD AND NOT USE_KBA)
+    MESSAGE(FATAL_ERROR "The OpenMP Target Offload backend must use the KBA sweep algorithm.")
+ENDIF()
 
 SET(INCLUDE_DIRS
   ${CMAKE_SOURCE_DIR}/src/1_base
@@ -58,7 +65,7 @@ SET(SOURCES
   )
 
 # A subset of sources, this is the sources that contain GPU kernels
-# Only used by HIP currently
+# Only used by HIP currently -- TODO, implement this in CUDA backend
 SET(GPU_SOURCES
   src/1_base/env_cuda.c
   src/3_sweeper/sweeper.c
@@ -75,23 +82,28 @@ ENDIF()
 
 # Standard options required to set -- NM and NU values
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNM_VALUE=${NM_VALUE} -DNU_VALUE=${NU_VALUE}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNM_VALUE=${NM_VALUE} -DNU_VALUE=${NU_VALUE}")
 
 # Optional general configurations that can be set with any acceleration package
 IF(USE_MPI)
   find_package(MPI REQUIRED)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_MPI")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_MPI")
 ENDIF()
 
-IF(USE_KBA)
+IF(USE_KBA AND (NOT USE_OMP_OFFLOAD) AND (NOT USE_ACC))
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_KBA")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_KBA")
 ENDIF()
 
 IF(USE_ACCELDIR)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_ACCELDIR")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_ACCELDIR")
 ENDIF()
 
 IF(RELAXED_TESTING)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DRELAXED_TESTING")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DRELAXED_TESTING")
 ENDIF()
 
 IF(NOT USE_CUDA)
@@ -180,7 +192,7 @@ ELSEIF(USE_HIP)
 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_HIP")
 
-  # the hip_sweeper library collects all the HIP code from Minisweep
+  # the hip_sweeper library collects all the HIP code from Minisweep into a single library
   ADD_LIBRARY(hip_sweeper STATIC ${GPU_SOURCES})
   TARGET_COMPILE_OPTIONS(hip_sweeper PRIVATE -x hip --offload-arch=${HIP_ARCH})
   ADD_LIBRARY(sweeper STATIC ${SOURCES})
