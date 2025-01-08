@@ -309,7 +309,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       ---*/
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp parallel for collapse(2)
+#pragma omp for collapse(2)
 #elif defined(USE_ACC)
 #pragma acc loop independent vector, collapse(2)
 #endif
@@ -357,7 +357,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       /*--------------------*/
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp parallel for
+#pragma omp for
 #elif defined(USE_ACC)
 #pragma acc loop independent vector
 #endif
@@ -379,7 +379,7 @@ void Sweeper_sweep_cell_acceldir( Dimensions dims,
       ---*/
 
 #ifdef USE_OPENMP_TARGET
-#pragma omp parallel for collapse(2)
+#pragma omp for collapse(2)
 #elif defined(USE_ACC)
 #pragma acc loop independent vector, collapse(2)
 #endif
@@ -844,6 +844,10 @@ void Sweeper_sweep_block_acceldir(
           const int v_offset = stepinfoall.stepinfo[octant].block_z * v_b_size;
 
           /*--- In-gridcell computations ---*/
+#ifdef USE_OPENMP_TARGET
+#pragma omp parallel
+{
+#endif
           Sweeper_sweep_cell_acceldir( dims_b, wavefront, octant, ix, iy,
                                        ix_g, iy_g, iz_g,
                                        dir_x, dir_y, dir_z,
@@ -851,6 +855,9 @@ void Sweeper_sweep_block_acceldir(
                                        a_from_m, m_from_a,
                                        &(vi[v_offset]), &(vo[v_offset]), vs_local,
                                        octant_in_block, noctant_per_block, ie );
+#ifdef USE_OPENMP_TARGET
+}
+#endif
 
         } /*---if---*/
 

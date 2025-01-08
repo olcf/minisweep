@@ -37,7 +37,7 @@ SET(USE_OPENMP4 OFF CACHE BOOL "Enable the device-based OpenMP 4 implementation.
 IF(USE_HIP AND USE_ACCELDIR)
     MESSAGE(FATAL_ERROR "The HIP backend is not compatible with the USE_ACCELDIR option.")
 ELSEIF(USE_OMP_OFFLOAD AND NOT USE_KBA)
-    MESSAGE(FATAL_ERROR "The OpenMP Target Offload backend must use the KBA sweep algorithm.")
+    MESSAGE(FATAL_ERROR "The OpenMP Target Offload backend is coded to use the KBA sweep algorithm.")
 ENDIF()
 
 SET(INCLUDE_DIRS
